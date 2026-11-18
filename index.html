@@ -376,27 +376,35 @@ button { cursor: pointer; }
 
 /* ── 動かせる・たためる道具 ── */
 .ui-float.moved { transform: none !important; right: auto !important; bottom: auto !important; }
-.grip, .fold {
+.fold {
   width: 32px; height: 24px; border: 0; padding: 0; background: none;
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--muted); border-radius: 999px; flex: none;
 }
-.grip { cursor: grab; touch-action: none; }
-.grip:active { cursor: grabbing; }
-.grip .ico circle { fill: currentColor; stroke: none; }
-.grip:hover, .fold:hover { color: var(--cyan); }
+.fold:hover { color: var(--cyan); }
+.ui-float[data-float] { cursor: grab; touch-action: none; }
+.ui-float[data-float].dragging, .ui-float[data-float].dragging * { cursor: grabbing; }
 .float-body { display: contents; }
 .rail .float-body > * { flex: none; }
-.dock .grip, .dock .fold { width: 24px; height: 32px; }
+.dock .fold { width: 24px; height: 32px; }
 .dock .fold .ico { transform: rotate(90deg); }
 .rail .fold .ico { transform: rotate(180deg); }
 .ui-float.is-folded .float-body { display: none; }
 .ui-float.is-folded.rail .fold .ico { transform: none; }
 .ui-float.is-folded.dock .fold .ico { transform: rotate(-90deg); }
-.ui-float.is-folded.rail { padding: 8px 4px; gap: 4px; }
-.ui-float.is-folded.dock { padding: 8px; gap: 8px; }
+.ui-float.is-folded.rail { padding: 16px 8px; gap: 8px; }
+.ui-float.is-folded.dock { padding: 8px 8px 8px 16px; gap: 8px; }
 .fold-peek { display: none; width: 24px; height: 24px; border-radius: 999px; background: var(--peek, #111827); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35), 0 0 8px var(--peek, transparent); }
 .ui-float.is-folded .fold-peek { display: block; }
+.fold-peek-tool {
+  display: none; width: 40px; height: 40px; border-radius: 999px; flex: none;
+  align-items: center; justify-content: center;
+  color: #eaffff; border: 1px solid var(--cyan);
+  background: radial-gradient(circle at 50% 35%, rgba(34, 228, 255, 0.35), rgba(34, 228, 255, 0.06) 70%);
+  box-shadow: var(--glow-cyan), inset 0 0 16px rgba(34, 228, 255, 0.35);
+}
+.fold-peek-tool .ico { width: 18px; height: 18px; filter: drop-shadow(0 0 4px rgba(34, 228, 255, 0.9)); }
+.ui-float.is-folded .fold-peek-tool { display: inline-flex; }
 .ui-float.dragging { opacity: 0.85; box-shadow: var(--float-shadow), var(--glow-cyan); }
 
 /* ── 使い方 ── */
@@ -691,7 +699,7 @@ button { cursor: pointer; }
   <canvas id="inkCanvas"></canvas>
   <canvas id="uiCanvas"></canvas>
   <nav class="rail ui-float" id="railFloat" data-float="rail" aria-label="描く道具">
-    <button class="grip" type="button" data-drag aria-label="道具の列を動かす" title="ドラッグで動かす"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="1.4"/><circle cx="12" cy="9" r="1.4"/><circle cx="16" cy="9" r="1.4"/><circle cx="8" cy="15" r="1.4"/><circle cx="12" cy="15" r="1.4"/><circle cx="16" cy="15" r="1.4"/></svg></button>
+    <span id="railPeek" class="fold-peek-tool" aria-hidden="true"></span>
     <div class="float-body">
     <button class="orb" type="button" data-mode="pen" title="ペン (P)" aria-label="ペン" data-tip="ペン  P"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/></svg></button>
     <button class="orb" type="button" data-mode="eraser" title="消しゴム (E)" aria-label="消しゴム" data-tip="消しゴム  E"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-9 9H7l-3-3z"/><path d="M10 9l5 5M11 20h9"/></svg></button>
@@ -703,7 +711,6 @@ button { cursor: pointer; }
     <button class="fold" type="button" data-fold aria-expanded="true" aria-label="道具の列をたたむ" title="たたむ／ひらく"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10l4 4 4-4"/></svg></button>
   </nav>
   <div class="dock ui-float" id="dockFloat" data-float="dock" role="group" aria-label="ペンの設定">
-    <button class="grip" type="button" data-drag aria-label="色の帯を動かす" title="ドラッグで動かす"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="9" cy="16" r="1.4"/><circle cx="15" cy="8" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="16" r="1.4"/></svg></button>
     <span class="fold-peek" aria-hidden="true"></span>
     <div class="float-body">
     <div id="colorWrap" class="dock-colors" role="group" aria-label="ペンの色">
@@ -759,7 +766,7 @@ button { cursor: pointer; }
       <dt>トラックパッドで描く</dt><dd><kbd>D</kbd>を押しているあいだ、押し込まずになぞるだけで描けます。離すと線が止まります。</dd>
       <dt>道具を切り替える</dt><dd><kbd>P</kbd>ペン　<kbd>E</kbd>消しゴム　<kbd>H</kbd>移動（ホワイトボードのとき）</dd>
       <dt>戻す・やり直す</dt><dd><kbd>⌘</kbd>＋<kbd>Z</kbd>で一つ戻す、<kbd>⇧</kbd>＋<kbd>⌘</kbd>＋<kbd>Z</kbd>でやり直す</dd>
-      <dt>道具の列・色の帯</dt><dd>点々のつまみをドラッグすると好きな場所へ動かせます。矢印のボタンでたためます。</dd>
+      <dt>道具の列・色の帯</dt><dd>どこでも押したままドラッグすると好きな場所へ動かせます。矢印のボタンでたためます。何もない所をダブルクリックすると元の場所へ戻ります。</dd>
       <dt>ホワイトボード（無限）</dt><dd>2本指・スペース＋ドラッグで動かし、ピンチ・<kbd>⌘</kbd>＋ホイールで拡大できます。用紙を選んでいるときは紙が固定されます。</dd>
       <dt>AIに頼む</dt><dd>描いてほしいものを送ると、ネットで調べてからペンで描きます。紙に絵があるときは「このネコに帽子をかぶせて」のように頼めます。</dd>
       <dt>保存</dt><dd>描くたびにこのブラウザへ自動で保存されます。紙の一覧から何枚でも増やせます。</dd>
@@ -1370,6 +1377,9 @@ button { cursor: pointer; }
     state.mode = mode;
     document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
     board.className = "board mode-" + mode;
+    // たたんだときに見せる、今の道具のアイコン
+    const peek = document.getElementById("railPeek"), act = document.querySelector(`[data-mode="${mode}"] svg`);
+    if (peek && act) peek.innerHTML = act.outerHTML;
     document.getElementById("colorWrap").hidden = mode === "eraser";
     document.getElementById("eraserTypeWrap").hidden = mode !== "eraser";
     renderUi();
@@ -2360,33 +2370,43 @@ button { cursor: pointer; }
       el.style.left = x + "px"; el.style.top = y + "px";
     };
     fold.addEventListener("click", () => { st.folded = !st.folded; applyFold(); clamp(); persist(); });
-    const grip = el.querySelector("[data-drag]");
-    grip.addEventListener("pointerdown", e => {
-      e.preventDefault(); e.stopPropagation();
-      grip.setPointerCapture(e.pointerId);
+    // どこを押してもドラッグで動かせる。少し動かしたときだけ移動にして、ふつうに押したときはボタンとして働く
+    let suppressClick = false;
+    el.addEventListener("pointerdown", e => {
+      if (e.button !== 0 || e.target.closest("input, select, textarea")) return;
+      const sx = e.clientX, sy = e.clientY;
       const r = el.getBoundingClientRect(), br = board.getBoundingClientRect();
-      const dx = e.clientX - r.left, dy = e.clientY - r.top;
-      el.classList.add("moved", "dragging");
-      el.style.left = (r.left - br.left) + "px"; el.style.top = (r.top - br.top) + "px";
+      const dx = sx - r.left, dy = sy - r.top;
+      let dragging = false;
       const move = ev => {
+        if (!dragging) {
+          if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+          dragging = true;
+          el.classList.add("moved", "dragging");
+          el.style.left = (r.left - br.left) + "px"; el.style.top = (r.top - br.top) + "px";
+        }
         const x = Math.max(8, Math.min(br.width - el.offsetWidth - 8, ev.clientX - br.left - dx));
         const y = Math.max(8, Math.min(br.height - el.offsetHeight - 8, ev.clientY - br.top - dy));
         el.style.left = x + "px"; el.style.top = y + "px";
         st.x = x / br.width; st.y = y / br.height;
       };
       const up = () => {
-        grip.removeEventListener("pointermove", move);
-        grip.removeEventListener("pointerup", up);
-        grip.removeEventListener("pointercancel", up);
-        el.classList.remove("dragging");
-        persist();
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        window.removeEventListener("pointercancel", up);
+        if (dragging) { el.classList.remove("dragging"); suppressClick = true; setTimeout(() => { suppressClick = false; }, 0); persist(); }
       };
-      grip.addEventListener("pointermove", move);
-      grip.addEventListener("pointerup", up);
-      grip.addEventListener("pointercancel", up);
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
     });
-    // ダブルクリックで元の場所へ
-    grip.addEventListener("dblclick", () => { delete st.x; delete st.y; el.classList.remove("moved"); el.style.left = el.style.top = ""; persist(); });
+    // 動かしたあとの「離した瞬間のクリック」はボタンに伝えない
+    el.addEventListener("click", e => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); } }, true);
+    // 何もない所をダブルクリックで元の場所へ
+    el.addEventListener("dblclick", e => {
+      if (e.target !== el) return;
+      delete st.x; delete st.y; el.classList.remove("moved"); el.style.left = el.style.top = ""; persist();
+    });
     applyFold();
     clamp();
     new ResizeObserver(clamp).observe(board);
