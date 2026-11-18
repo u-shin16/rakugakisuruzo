@@ -462,6 +462,7 @@ button { cursor: pointer; }
 .board-open { border: 0; background: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 8px; }
 .board-thumb { aspect-ratio: 4 / 3; border-radius: 8px; background: #04040a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .board-thumb img { max-width: 100%; max-height: 100%; }
+.board-blank { display: block; height: 100%; max-width: 100%; background: #fff; }
 .board-name { font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; }
 .board-date { font-size: 11px; color: var(--muted); padding: 0 8px; }
 .board-tools { display: flex; gap: 8px; }
@@ -1481,6 +1482,8 @@ button { cursor: pointer; }
     await store.put(b);
     boardsCache.set(b.id, b);
     applyBoard(b);
+    dirty = true;          // 一覧の見本の絵をすぐ作る
+    await saveNow();
   }
   async function openBoard(id) {
     if (id === boardId) return;
@@ -1505,6 +1508,12 @@ button { cursor: pointer; }
       const im = document.createElement("div");
       im.className = "board-thumb";
       if (b.thumb) { const i = document.createElement("img"); i.src = b.thumb; i.alt = ""; im.appendChild(i); }
+      else { // 見本がまだない紙は、白い紙の形だけ出す
+        const blank = document.createElement("span"); blank.className = "board-blank";
+        const land = b.orient === "landscape" || b.paper === "free";
+        blank.style.aspectRatio = b.paper === "free" ? "4 / 3" : (land ? "1.414 / 1" : "1 / 1.414");
+        im.appendChild(blank);
+      }
       const nm = document.createElement("span"); nm.className = "board-name"; nm.textContent = b.name;
       const dt = document.createElement("span"); dt.className = "board-date"; dt.textContent = (b.id === boardId ? "開いている紙・" : "") + fmtDate(b.updated || b.created);
       open.append(im, nm, dt);
