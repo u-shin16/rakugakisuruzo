@@ -141,7 +141,7 @@ def api_research():
     if not api_key:
         return jsonify(error="AIの設定がまだできていません。"), 503
     try:
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(api_key=api_key, http_options=genai_types.HttpOptions(api_version="v1beta"))
         response = client.models.generate_content(
             model=RESEARCH_MODEL,
             contents=RESEARCH_GUIDE.format(prompt=prompt),
@@ -184,7 +184,7 @@ def api_draw():
         return jsonify(error="AIの設定がまだできていません。"), 503
 
     try:
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(api_key=api_key, http_options=genai_types.HttpOptions(api_version="v1beta"))
         research = research_block(data.get("research"))
         contents = IMAGE_GUIDE.format(prompt=prompt, research=research)
         m = _DATA_URL_RE.match(str(data.get("image") or ""))
