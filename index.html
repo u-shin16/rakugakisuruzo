@@ -714,14 +714,14 @@ button { cursor: pointer; }
     <span class="fold-peek" aria-hidden="true"></span>
     <div class="float-body">
     <div id="colorWrap" class="dock-colors" role="group" aria-label="ペンの色">
-      <button class="swatch" type="button" data-color="#111827" style="--swatch-color:#111827" aria-label="黒"></button>
-      <button class="swatch" type="button" data-color="#ef4444" style="--swatch-color:#ef4444" aria-label="赤"></button>
-      <button class="swatch" type="button" data-color="#f97316" style="--swatch-color:#f97316" aria-label="オレンジ"></button>
-      <button class="swatch" type="button" data-color="#facc15" style="--swatch-color:#facc15" aria-label="黄色"></button>
-      <button class="swatch" type="button" data-color="#22c55e" style="--swatch-color:#22c55e" aria-label="緑"></button>
-      <button class="swatch" type="button" data-color="#2563eb" style="--swatch-color:#2563eb" aria-label="青"></button>
-      <button class="swatch" type="button" data-color="#a855f7" style="--swatch-color:#a855f7" aria-label="紫"></button>
-      <button class="swatch is-light" type="button" data-color="#ffffff" style="--swatch-color:#ffffff" aria-label="白"></button>
+      <button class="swatch" type="button" data-color="#111827" style="--swatch-color:#111827" aria-label="黒" title="黒（K）"></button>
+      <button class="swatch" type="button" data-color="#ef4444" style="--swatch-color:#ef4444" aria-label="赤" title="赤（R）"></button>
+      <button class="swatch" type="button" data-color="#f97316" style="--swatch-color:#f97316" aria-label="オレンジ" title="オレンジ（O）"></button>
+      <button class="swatch" type="button" data-color="#facc15" style="--swatch-color:#facc15" aria-label="黄色" title="黄色（Y）"></button>
+      <button class="swatch" type="button" data-color="#22c55e" style="--swatch-color:#22c55e" aria-label="緑" title="緑（G）"></button>
+      <button class="swatch" type="button" data-color="#2563eb" style="--swatch-color:#2563eb" aria-label="青" title="青（B）"></button>
+      <button class="swatch" type="button" data-color="#a855f7" style="--swatch-color:#a855f7" aria-label="紫" title="紫（V）"></button>
+      <button class="swatch is-light" type="button" data-color="#ffffff" style="--swatch-color:#ffffff" aria-label="白" title="白（W）"></button>
       <button id="moreColorBtn" class="swatch more" type="button" aria-label="ほかの色・くわしい色" aria-expanded="false" aria-controls="colorPop" title="ほかの色・くわしい色"></button>
     </div>
     <div id="eraserTypeWrap" class="switch" role="group" aria-label="消しゴムの種類" hidden>
@@ -765,6 +765,7 @@ button { cursor: pointer; }
     <dl class="help-list">
       <dt>トラックパッドで描く</dt><dd><kbd>D</kbd>を押しているあいだ、押し込まずになぞるだけで描けます。離すと線が止まります。</dd>
       <dt>道具を切り替える</dt><dd><kbd>P</kbd>ペン　<kbd>E</kbd>消しゴム　<kbd>H</kbd>移動（ホワイトボードのとき）</dd>
+      <dt>色を切り替える（ペンのとき）</dt><dd><kbd>K</kbd>黒　<kbd>R</kbd>赤　<kbd>O</kbd>オレンジ　<kbd>Y</kbd>黄　<kbd>G</kbd>緑　<kbd>B</kbd>青　<kbd>V</kbd>紫　<kbd>W</kbd>白</dd>
       <dt>戻す・やり直す</dt><dd><kbd>⌘</kbd>＋<kbd>Z</kbd>で一つ戻す、<kbd>⇧</kbd>＋<kbd>⌘</kbd>＋<kbd>Z</kbd>でやり直す</dd>
       <dt>道具の列・色の帯</dt><dd>どこでも押したままドラッグすると好きな場所へ動かせます。矢印のボタンでたためます。何もない所をダブルクリックすると元の場所へ戻ります。</dd>
       <dt>ホワイトボード（無限）</dt><dd>2本指・スペース＋ドラッグで動かし、ピンチ・<kbd>⌘</kbd>＋ホイールで拡大できます。用紙を選んでいるときは紙が固定されます。</dd>
@@ -1463,6 +1464,9 @@ button { cursor: pointer; }
     if (e.code === "Space" && viewLocked()) { e.preventDefault(); return; }
     if (e.code === "Space") { if (!spaceDown) { spaceDown = true; board.classList.add("mode-hand"); renderUi(); } e.preventDefault(); return; }
     const k = e.key.toLowerCase();
+    // ペンのときは、色の頭文字（英語）で色を変える
+    const COLOR_KEYS = { k: "#111827", r: "#ef4444", o: "#f97316", y: "#facc15", g: "#22c55e", b: "#2563eb", v: "#a855f7", w: "#ffffff" };
+    if (state.mode === "pen" && COLOR_KEYS[k] && !e.repeat) { setColor(COLOR_KEYS[k]); return; }
     if (k === "p") setMode("pen");
     else if (k === "e") setMode("eraser");
     else if (k === "h" && !viewLocked()) setMode("hand");
