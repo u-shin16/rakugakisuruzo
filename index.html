@@ -1,0 +1,2254 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>らくがきするぞ</title>
+<style>
+/* ネオンの光る暗い画面。余白は8の倍数（8/16/24/32/40/48） */
+:root {
+  --bg: #06060c;
+  --glass: rgba(14, 15, 26, 0.86);
+  --glass-2: rgba(22, 24, 40, 0.92);
+  --line: rgba(160, 170, 255, 0.14);
+  --text: #f1f2ff;
+  --muted: #8a8eb6;
+  --cyan: #22e4ff;
+  --pink: #ff2bd6;
+  --violet: #8b5cff;
+  --danger: #ff4d6d;
+  --glow-cyan: 0 0 8px rgba(34, 228, 255, 0.6), 0 0 24px rgba(34, 228, 255, 0.3);
+  --glow-pink: 0 0 8px rgba(255, 43, 214, 0.6), 0 0 24px rgba(255, 43, 214, 0.3);
+  --float-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.ico { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; flex: none; }
+
+/* ── 上の帯 ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-height: 64px;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, #0b0b16, #07070e);
+  border-bottom: 1px solid rgba(255, 43, 214, 0.35);
+  box-shadow: 0 0 16px rgba(255, 43, 214, 0.18);
+  position: relative;
+  z-index: 5;
+}
+.brand {
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  color: #e9fdff;
+  text-shadow: 0 0 8px rgba(34, 228, 255, 0.95), 0 0 24px rgba(34, 228, 255, 0.55);
+  white-space: nowrap;
+}
+.brand em {
+  font-style: normal;
+  color: #ffe9fb;
+  text-shadow: 0 0 8px rgba(255, 43, 214, 1), 0 0 24px rgba(255, 43, 214, 0.6);
+}
+.topbar-mid { display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap; }
+.topbar-end { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* ピル（細長い丸） */
+.pill {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: border-color .15s, box-shadow .15s;
+}
+.pill:hover { border-color: rgba(34, 228, 255, 0.55); box-shadow: 0 0 8px rgba(34, 228, 255, 0.25); }
+.pill[aria-expanded="true"] { border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+.pill .chev { width: 16px; height: 16px; color: var(--muted); }
+.board-current { overflow: hidden; text-overflow: ellipsis; max-width: 144px; }
+.pill-key { color: var(--muted); font-size: 11px; letter-spacing: 0.08em; }
+.pill-select select {
+  border: 0; background: transparent; padding: 0;
+  font-weight: 700; font-size: 13px; cursor: pointer;
+  color-scheme: dark;
+}
+.pill-select select:focus { outline: none; }
+.pill-select select option { background: #151626; color: var(--text); }
+
+/* スイッチ（ピルの中で選ぶ） */
+.switch {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+.switch-btn {
+  height: 32px;
+  min-width: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  transition: color .15s, background .15s, box-shadow .15s;
+}
+.switch-btn:hover { color: var(--text); }
+.switch-btn.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(255, 43, 214, 0.9), rgba(139, 92, 255, 0.9));
+  box-shadow: var(--glow-pink);
+}
+
+/* 丸いボタン（オーブ） */
+.orb {
+  position: relative;
+  width: 48px; height: 48px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.01) 70%);
+  color: #c9ccef;
+  transition: color .15s, border-color .15s, box-shadow .15s, transform .15s;
+}
+.orb .ico { width: 20px; height: 20px; }
+.orb:hover { color: #fff; border-color: rgba(34, 228, 255, 0.55); }
+.orb:active { transform: scale(0.94); }
+.orb:disabled { opacity: 0.3; cursor: not-allowed; }
+.orb:disabled:hover { border-color: var(--line); color: #c9ccef; }
+.orb[aria-pressed="true"] {
+  color: #eaffff;
+  border-color: var(--cyan);
+  background: radial-gradient(circle at 50% 35%, rgba(34, 228, 255, 0.35), rgba(34, 228, 255, 0.06) 70%);
+  box-shadow: var(--glow-cyan), inset 0 0 16px rgba(34, 228, 255, 0.35);
+}
+.orb[aria-pressed="true"] .ico { filter: drop-shadow(0 0 4px rgba(34, 228, 255, 0.9)); }
+.orb-sm { width: 40px; height: 40px; }
+.orb-sm .ico { width: 16px; height: 16px; }
+.orb-xs { width: 32px; height: 32px; }
+.orb-xs .ico { width: 16px; height: 16px; }
+.orb.danger { color: #ff8fa3; }
+.orb.danger:hover { border-color: var(--danger); color: #fff; box-shadow: 0 0 8px rgba(255, 77, 109, 0.6); }
+
+/* ボタンの名前（マウスを乗せると出る） */
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  white-space: pre;
+  padding: 0 8px;
+  line-height: 24px;
+  border-radius: 8px;
+  background: #15162a;
+  border: 1px solid rgba(34, 228, 255, 0.4);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s;
+  z-index: 10;
+}
+.rail [data-tip]::after { left: calc(100% + 16px); top: 50%; transform: translateY(-50%); }
+.topbar [data-tip]::after { top: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+[data-tip]:hover::after { opacity: 1; }
+
+/* AIボタン：光る縁取り */
+.ai-trigger {
+  position: relative;
+  height: 40px;
+  padding: 1px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--pink), var(--violet), var(--cyan), var(--pink));
+  background-size: 300% 100%;
+  animation: neonFlow 6s linear infinite;
+  box-shadow: var(--glow-pink);
+}
+.ai-trigger-in {
+  height: 100%;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #0d0d1a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: background .15s;
+}
+.ai-trigger:hover .ai-trigger-in, .ai-trigger[aria-expanded="true"] .ai-trigger-in { background: rgba(13, 13, 26, 0.55); }
+.ai-trigger .ico { color: #ffd2f7; filter: drop-shadow(0 0 4px rgba(255, 43, 214, 0.9)); }
+@keyframes neonFlow { to { background-position: 300% 0; } }
+
+/* ── ボード ── */
+.board {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background:
+    radial-gradient(1200px 640px at 0% 0%, rgba(255, 43, 214, 0.10), transparent 60%),
+    radial-gradient(1000px 640px at 100% 100%, rgba(34, 228, 255, 0.10), transparent 60%),
+    var(--bg);
+  overflow: hidden;
+  touch-action: none;
+}
+.board > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.board.mode-pen { cursor: crosshair; }
+.board.mode-eraser { cursor: none; }
+.board.mode-hand { cursor: grab; }
+.board.panning { cursor: grabbing; }
+.ui-float { cursor: default; }
+
+/* 左の縦の列 */
+.rail {
+  position: absolute;
+  left: 16px; top: 50%;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 8px;
+  border-radius: 40px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  box-shadow: var(--float-shadow);
+  backdrop-filter: blur(16px);
+  z-index: 3;
+}
+.rail-sep { width: 24px; height: 1px; background: var(--line); margin: 0; }
+
+/* 下の浮いた帯 */
+.dock {
+  position: absolute;
+  left: 50%; bottom: 24px;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px;
+  padding: 8px 16px 8px 8px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  box-shadow: var(--float-shadow), 0 0 24px rgba(139, 92, 255, 0.15);
+  backdrop-filter: blur(16px);
+  z-index: 3;
+  max-width: calc(100% - 32px);
+}
+.dock-colors { display: flex; align-items: center; gap: 8px; padding-left: 8px; }
+.dock-sep { width: 1px; height: 24px; background: var(--line); }
+.swatch {
+  width: 32px; height: 32px;
+  border: 0; padding: 0;
+  border-radius: 999px;
+  background: var(--swatch-color);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+  transition: box-shadow .15s, transform .15s;
+}
+.swatch:hover { transform: translateY(-2px); }
+.swatch.active {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px #0d0d1a, 0 0 0 4px var(--swatch-color), 0 0 16px var(--swatch-color);
+}
+.swatch.is-light.active { box-shadow: 0 0 0 2px #0d0d1a, 0 0 0 4px #fff, 0 0 16px rgba(255, 255, 255, 0.7); }
+.swatch[data-color="#111827"].active { box-shadow: 0 0 0 2px #0d0d1a, 0 0 0 4px var(--cyan), 0 0 16px rgba(34, 228, 255, 0.6); }
+.dock-size { display: flex; align-items: center; gap: 8px; }
+.size-preview { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; }
+.size-preview i { display: block; border-radius: 999px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45), 0 0 8px rgba(34, 228, 255, 0.5); }
+.dock input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 120px; height: 24px; background: transparent; cursor: pointer;
+}
+.dock input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--cyan), var(--pink));
+  box-shadow: 0 0 8px rgba(34, 228, 255, 0.5);
+}
+.dock input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px; margin-top: -6px;
+  border-radius: 999px; background: #fff;
+  box-shadow: 0 0 0 4px rgba(34, 228, 255, 0.25), 0 0 8px rgba(34, 228, 255, 0.9);
+}
+.dock input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--pink)); }
+.dock input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 999px; background: #fff; box-shadow: 0 0 8px rgba(34, 228, 255, 0.9); }
+
+.zoom-box {
+  position: absolute;
+  right: 16px; bottom: 24px;
+  display: flex; align-items: center; gap: 0;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  box-shadow: var(--float-shadow);
+  backdrop-filter: blur(16px);
+  z-index: 3;
+}
+.zoom-box .orb { border-color: transparent; background: none; }
+.zoom-label { min-width: 56px; height: 32px; border: 0; background: none; text-align: center; font-size: 12px; font-weight: 800; color: var(--muted); border-radius: 999px; }
+.zoom-label:hover { color: var(--cyan); }
+
+.hint {
+  position: absolute;
+  right: 16px; top: 16px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0 16px;
+  line-height: 32px;
+  border-radius: 999px;
+  background: rgba(14, 15, 26, 0.7);
+  border: 1px solid var(--line);
+  z-index: 1;
+  pointer-events: none;
+}
+.hint b {
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-right: 4px;
+  box-shadow: 0 0 8px rgba(34, 228, 255, 0.4);
+}
+.hover-badge {
+  display: none;
+  position: absolute; top: 16px; left: 50%;
+  transform: translateX(-50%);
+  padding: 0 16px; line-height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--cyan);
+  background: rgba(34, 228, 255, 0.1);
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  font-size: 12px; font-weight: 800;
+  z-index: 3; pointer-events: none;
+}
+.board.hover-drawing .hover-badge { display: block; }
+.paper-locked [data-mode="hand"], .paper-locked .zoom-box, .paper-locked .hint-move { display: none; }
+.paper-locked .save-state { bottom: 24px; }
+.save-state {
+  position: absolute; right: 16px; bottom: 80px;
+  font-size: 11px; font-weight: 800; color: var(--muted);
+  background: var(--glass);
+  border: 1px solid var(--line);
+  padding: 0 16px; line-height: 32px; border-radius: 999px;
+  z-index: 3; pointer-events: none;
+}
+.save-state:empty { display: none; }
+.save-state.ok { color: var(--cyan); border-color: rgba(34, 228, 255, 0.4); }
+.save-state.ok::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); margin-right: 8px; }
+.save-state.error { color: var(--danger); border-color: var(--danger); }
+
+/* ── 色えらび ── */
+.swatch.more {
+  background: conic-gradient(#ff2bd6, #ef4444, #facc15, #22c55e, #22e4ff, #2563eb, #8b5cff, #ff2bd6);
+  position: relative;
+}
+.swatch.more::after {
+  content: ""; position: absolute; inset: 8px; border-radius: 999px;
+  background: var(--cur, #0d0d1a);
+  box-shadow: 0 0 0 2px #0d0d1a;
+}
+.swatch.more.active { box-shadow: 0 0 0 2px #0d0d1a, 0 0 0 4px #fff, 0 0 16px rgba(255, 255, 255, 0.6); }
+.color-pop {
+  position: absolute;
+  left: 50%; bottom: 96px;
+  transform: translateX(-50%);
+  width: min(432px, calc(100% - 32px));
+  max-height: calc(100% - 128px);
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 24px;
+  background: rgba(12, 13, 24, 0.96);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 40px rgba(139, 92, 255, 0.15);
+  backdrop-filter: blur(16px);
+  z-index: 6;
+}
+.pop-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
+.pop-swatch {
+  aspect-ratio: 1; width: 100%; border: 0; padding: 0; border-radius: 999px;
+  background: var(--swatch-color);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  transition: transform .12s, box-shadow .12s;
+}
+.pop-swatch:hover { transform: scale(1.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.4), 0 0 16px var(--swatch-color); }
+.pop-swatch.active { box-shadow: 0 0 0 2px #0d0d1a, 0 0 0 4px var(--cyan), 0 0 16px var(--cyan); }
+.pop-section { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: var(--muted); margin-bottom: -8px; }
+.sv-canvas { width: 100%; height: 160px; border-radius: 16px; cursor: crosshair; touch-action: none; display: block; }
+.hue-input {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 16px; border-radius: 999px; cursor: pointer;
+  background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+.hue-input::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 999px; background: transparent; border: 3px solid #fff; box-shadow: 0 0 8px rgba(0,0,0,.6); }
+.hue-input::-moz-range-thumb { width: 24px; height: 24px; border-radius: 999px; background: transparent; border: 3px solid #fff; }
+.pop-row { display: flex; align-items: center; gap: 8px; }
+.pick-preview { width: 40px; height: 40px; border-radius: 999px; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.3), 0 0 16px var(--pc, transparent); background: var(--pc, #000); }
+.hex-wrap { flex: 1; min-width: 0; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: #07070f; color: var(--muted); font-weight: 800; }
+.hex-wrap:focus-within { border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+.hex-wrap input { flex: 1; width: 100%; min-width: 0; border: 0; background: transparent; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; -webkit-user-select: text; user-select: text; }
+.hex-wrap input:focus { outline: none; }
+.pick-apply { height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: linear-gradient(135deg, var(--pink), var(--violet)); color: #fff; font-size: 12px; font-weight: 800; box-shadow: var(--glow-pink); white-space: nowrap; }
+.pick-apply:hover { filter: brightness(1.12); }
+.pop-recent { display: flex; flex-wrap: wrap; gap: 8px; }
+.pop-recent .pop-swatch { width: 32px; }
+
+/* ── パネル（紙の一覧・AI） ── */
+.boards-panel, .ai-panel {
+  position: absolute; top: 16px;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 24px;
+  background: rgba(12, 13, 24, 0.95);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 40px rgba(139, 92, 255, 0.15);
+  backdrop-filter: blur(16px);
+  z-index: 6;
+}
+.boards-panel { left: 96px; width: min(576px, calc(100% - 112px)); max-height: calc(100% - 32px); overflow-y: auto; }
+.ai-head { display: flex; align-items: center; justify-content: space-between; font-size: 15px; }
+.ai-head strong { letter-spacing: 0.06em; text-shadow: 0 0 8px rgba(255, 43, 214, 0.7); }
+.ai-head-tools { display: inline-flex; align-items: center; gap: 8px; }
+.ai-close { width: 32px; height: 32px; border: 1px solid var(--line); background: none; color: var(--muted); border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; }
+.ai-close:hover { color: #fff; border-color: var(--pink); box-shadow: 0 0 8px rgba(255, 43, 214, 0.5); }
+.ai-link { border: 0; background: none; color: var(--muted); font-size: 12px; padding: 0 8px; }
+.ai-link:hover { color: var(--pink); }
+.boards-note { margin: -8px 0 0; font-size: 12px; color: var(--muted); }
+.boards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+.board-card {
+  display: flex; flex-direction: column; gap: 8px;
+  border: 1px solid var(--line); border-radius: 16px; padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.board-card:hover { border-color: rgba(34, 228, 255, 0.45); transform: translateY(-2px); }
+.board-card.current { border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+.board-open { border: 0; background: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.board-thumb { aspect-ratio: 4 / 3; border-radius: 8px; background: #04040a; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.board-thumb img { max-width: 100%; max-height: 100%; }
+.board-name { font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; }
+.board-date { font-size: 11px; color: var(--muted); padding: 0 8px; }
+.board-tools { display: flex; gap: 8px; }
+.board-tools button { flex: 1; height: 32px; border: 1px solid var(--line); background: transparent; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.board-tools button:hover { border-color: var(--cyan); color: var(--cyan); }
+.board-tools button.danger { color: #ff8fa3; }
+.board-tools button.danger:hover { border-color: var(--danger); color: #fff; }
+.board-add {
+  align-items: center; justify-content: center; gap: 8px; min-height: 184px;
+  color: #ffd2f7; font-weight: 800;
+  border: 1px dashed rgba(255, 43, 214, 0.55);
+  background: radial-gradient(circle at 50% 40%, rgba(255, 43, 214, 0.12), transparent 70%);
+  cursor: pointer;
+  text-shadow: 0 0 8px rgba(255, 43, 214, 0.8);
+}
+.board-add:hover { box-shadow: var(--glow-pink); border-color: var(--pink); }
+.board-add .ico { width: 32px; height: 32px; filter: drop-shadow(0 0 8px rgba(255, 43, 214, 0.9)); }
+
+.ai-panel { right: 16px; width: min(432px, calc(100% - 32px)); }
+.ai-log {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: min(336px, 45vh);
+  overflow-y: auto;
+  -webkit-user-select: text; user-select: text;
+}
+.ai-log:empty { display: none; }
+.ai-msg { max-width: 85%; padding: 8px 16px; border-radius: 24px; font-size: 13px; line-height: 1.6; word-break: break-word; }
+.ai-msg.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, rgba(255, 43, 214, 0.28), rgba(139, 92, 255, 0.28));
+  border: 1px solid rgba(255, 43, 214, 0.6);
+  border-bottom-right-radius: 8px;
+  cursor: pointer;
+}
+.ai-msg.ai {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(34, 228, 255, 0.35);
+  border-bottom-left-radius: 8px;
+  display: flex; gap: 8px; align-items: center;
+  padding: 8px 16px 8px 8px;
+}
+.ai-msg.ai.research { flex-direction: column; align-items: stretch; gap: 8px; padding: 16px; max-width: 100%; }
+.research-head { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: var(--cyan); text-shadow: 0 0 8px rgba(34, 228, 255, 0.6); }
+.research-body { white-space: pre-wrap; font-size: 12px; line-height: 1.7; color: #d5d8f5; }
+.research-src { display: flex; flex-wrap: wrap; gap: 8px; }
+.research-src a { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; line-height: 24px; text-decoration: none; }
+.research-src a:hover { color: var(--cyan); border-color: var(--cyan); }
+.ai-msg.ai.error { color: #ff8fa3; border-color: rgba(255, 77, 109, 0.5); }
+.ai-msg.ai img { width: 48px; height: 48px; object-fit: contain; background: #fff; border-radius: 16px; flex: none; }
+.ai-msg.ai .ai-retry { border: 0; background: none; color: var(--cyan); font-size: 12px; padding: 0 0 0 8px; text-decoration: underline; }
+.ai-msg.pending { padding: 8px 16px; }
+.ai-msg.pending::after { content: "…"; animation: aiDots 1.2s steps(3) infinite; display: inline-block; width: 1.2em; overflow: hidden; vertical-align: bottom; }
+@keyframes aiDots { from { width: 0.2em; } to { width: 1.2em; } }
+.ai-examples { display: flex; flex-wrap: wrap; gap: 8px; }
+.ai-chip {
+  height: 32px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ai-chip:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 8px rgba(34, 228, 255, 0.4); }
+.ai-input {
+  display: flex; gap: 8px; align-items: flex-end;
+  padding: 8px 8px 8px 16px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: #07070f;
+  transition: border-color .15s, box-shadow .15s;
+}
+.ai-input:focus-within { border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+.ai-panel textarea {
+  flex: 1;
+  min-height: 32px;
+  max-height: 120px;
+  padding: 4px 0;
+  resize: none;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  line-height: 24px;
+  -webkit-user-select: text; user-select: text;
+}
+.ai-panel textarea::placeholder { color: #5d6088; }
+.ai-panel textarea:focus { outline: none; }
+.ai-go {
+  width: 32px; height: 32px; flex: none;
+  border: 0; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--pink), var(--violet));
+  color: #fff;
+  box-shadow: var(--glow-pink);
+}
+.ai-go:hover { filter: brightness(1.15); }
+.ai-status { font-size: 12px; color: var(--muted); margin-top: -8px; padding: 0 16px; }
+.ai-status.error { color: #ff8fa3; }
+.ai-panel.busy .ai-go { opacity: 0.5; pointer-events: none; }
+
+@media (max-width: 760px) {
+  .topbar { gap: 8px; padding: 8px; }
+  .brand { display: none; }
+  .topbar-mid { order: 3; width: 100%; flex: none; flex-wrap: nowrap; overflow-x: auto; }
+  .topbar-mid > * { flex: none; }
+  .pill-key { display: none; }
+  .ai-trigger-in span { display: none; }
+  .hint { display: none; }
+  .rail { left: 8px; }
+  .dock { bottom: 16px; gap: 8px; padding: 8px 16px; flex-wrap: wrap; justify-content: center; border-radius: 24px; width: calc(100% - 16px); }
+  .dock-sep { display: none; }
+  .dock-colors { gap: 8px; padding-left: 0; }
+  .swatch { width: 24px; height: 24px; }
+  .dock input[type="range"] { width: 72px; }
+  .zoom-box { top: 16px; bottom: auto; right: 8px; }
+  .save-state { top: 64px; bottom: auto; right: 8px; }
+  .paper-locked .save-state { top: 16px; bottom: auto; }
+  .boards-panel { left: 8px; width: calc(100% - 16px); }
+  .ai-panel { right: 8px; width: calc(100% - 16px); }
+  [data-tip]::after { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="brand" aria-label="らくがきするぞ">らくがき<em>するぞ</em></span>
+  <button id="boardsBtn" class="pill" type="button" title="紙の一覧（新しい紙・切り替え）" aria-expanded="false" aria-controls="boardsPanel">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg><span id="boardName" class="board-current">紙1</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+  </button>
+  <div class="topbar-mid">
+    <label class="pill pill-select" title="用紙のサイズ">
+      <span class="pill-key">サイズ</span>
+      <select id="paperSelect" aria-label="用紙のサイズ">
+        <option value="free">ホワイトボード（無限）</option>
+        <option value="yotsugiri">四つ切</option>
+        <option value="A3">A3</option>
+        <option value="A4">A4</option>
+        <option value="A5">A5</option>
+        <option value="B4">B4</option>
+        <option value="B5">B5</option>
+        <option value="postcard">はがき</option>
+        <option value="wide">スライド 16:9</option>
+      </select>
+    </label>
+    <div id="orientWrap" class="switch" role="group" aria-label="用紙の向き">
+      <button class="switch-btn" type="button" data-orient="portrait">縦</button>
+      <button class="switch-btn" type="button" data-orient="landscape">横</button>
+    </div>
+    <label class="pill pill-select" title="背景の模様">
+      <span class="pill-key">背景</span>
+      <select id="bgSelect" aria-label="背景の模様">
+        <option value="plain">無地</option>
+        <option value="grid">方眼</option>
+        <option value="lines">罫線</option>
+        <option value="dots">ドット</option>
+      </select>
+    </label>
+  </div>
+  <div class="topbar-end">
+    <button id="saveBtn" class="orb orb-sm" type="button" title="画像（PNG）で保存" aria-label="画像で保存" data-tip="画像で保存"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>
+    <button id="clearBtn" class="orb orb-sm danger" type="button" title="全部消す" aria-label="全部消す" data-tip="全部消す"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
+    <button id="aiBtn" class="ai-trigger" type="button" title="AIに絵を描いてもらう" aria-expanded="false" aria-controls="aiPanel">
+      <span class="ai-trigger-in"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/></svg><span>AIに頼む</span></span>
+    </button>
+  </div>
+</header>
+
+<div id="board" class="board mode-pen">
+  <canvas id="bgCanvas"></canvas>
+  <canvas id="inkCanvas"></canvas>
+  <canvas id="uiCanvas"></canvas>
+  <nav class="rail ui-float" aria-label="描く道具">
+    <button class="orb" type="button" data-mode="pen" title="ペン (P)" aria-label="ペン" data-tip="ペン  P"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/></svg></button>
+    <button class="orb" type="button" data-mode="eraser" title="消しゴム (E)" aria-label="消しゴム" data-tip="消しゴム  E"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-9 9H7l-3-3z"/><path d="M10 9l5 5M11 20h9"/></svg></button>
+    <button class="orb" type="button" data-mode="hand" title="移動 (H)" aria-label="移動" data-tip="移動  H"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg></button>
+    <span class="rail-sep" aria-hidden="true"></span>
+    <button id="undoBtn" class="orb" type="button" title="一つ戻す (⌘Z)" aria-label="一つ戻す" data-tip="一つ戻す  ⌘Z" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
+    <button id="redoBtn" class="orb" type="button" title="やり直す (⇧⌘Z)" aria-label="やり直す" data-tip="やり直す  ⇧⌘Z" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+  </nav>
+  <div class="dock ui-float" role="group" aria-label="ペンの設定">
+    <div id="colorWrap" class="dock-colors" role="group" aria-label="ペンの色">
+      <button class="swatch" type="button" data-color="#111827" style="--swatch-color:#111827" aria-label="黒"></button>
+      <button class="swatch" type="button" data-color="#ef4444" style="--swatch-color:#ef4444" aria-label="赤"></button>
+      <button class="swatch" type="button" data-color="#f97316" style="--swatch-color:#f97316" aria-label="オレンジ"></button>
+      <button class="swatch" type="button" data-color="#facc15" style="--swatch-color:#facc15" aria-label="黄色"></button>
+      <button class="swatch" type="button" data-color="#22c55e" style="--swatch-color:#22c55e" aria-label="緑"></button>
+      <button class="swatch" type="button" data-color="#2563eb" style="--swatch-color:#2563eb" aria-label="青"></button>
+      <button class="swatch" type="button" data-color="#a855f7" style="--swatch-color:#a855f7" aria-label="紫"></button>
+      <button class="swatch is-light" type="button" data-color="#ffffff" style="--swatch-color:#ffffff" aria-label="白"></button>
+      <button id="moreColorBtn" class="swatch more" type="button" aria-label="ほかの色・くわしい色" aria-expanded="false" aria-controls="colorPop" title="ほかの色・くわしい色"></button>
+    </div>
+    <div id="eraserTypeWrap" class="switch" role="group" aria-label="消しゴムの種類" hidden>
+      <button class="switch-btn" type="button" data-eraser-type="pixel" title="こすった部分だけ消す">部分</button>
+      <button class="switch-btn" type="button" data-eraser-type="object" title="触れた一筆をまとめて消す">一筆ごと</button>
+    </div>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <label class="dock-size" title="太さ">
+      <span class="size-preview" aria-hidden="true"><i id="sizeDot"></i></span>
+      <input id="sizeInput" type="range" min="2" max="40" value="6" aria-label="太さ">
+    </label>
+  </div>
+  <form id="aiPanel" class="ai-panel" hidden>
+    <div class="ai-head">
+      <strong>AIに頼む</strong>
+      <span class="ai-head-tools">
+        <button id="aiClear" class="ai-link" type="button">履歴を消す</button>
+        <button id="aiClose" class="ai-close" type="button" aria-label="閉じる"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </span>
+    </div>
+    <div id="aiLog" class="ai-log" aria-live="polite"></div>
+    <div id="aiExamples" class="ai-examples">
+      <button type="button" class="ai-chip">リアルな柴犬</button>
+      <button type="button" class="ai-chip">モナ・リザをフルカラーで</button>
+      <button type="button" class="ai-chip">水彩の富士山</button>
+      <button type="button" class="ai-chip">帽子をかぶったネコ</button>
+    </div>
+    <div class="ai-input">
+      <textarea id="aiPrompt" rows="1" maxlength="200" placeholder="例：このネコに帽子をかぶせて（Enterで送る）"></textarea>
+      <button id="aiGo" class="ai-go" type="submit" aria-label="送る"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+    </div>
+    <span id="aiStatus" class="ai-status">紙に描いてあるものに合わせて描きます</span>
+  </form>
+  <div class="hint"><b>D</b>を押しながらなぞると描けます<span class="hint-move">／2本指・スペース＋ドラッグで移動／ピンチ・⌘＋ホイールで拡大</span></div>
+  <div class="hover-badge" aria-hidden="true">なぞり書き中</div>
+  <div id="saveState" class="save-state" aria-live="polite"></div>
+  <div id="colorPop" class="color-pop ui-float" hidden>
+    <div class="ai-head">
+      <strong>色をえらぶ</strong>
+      <button id="colorPopClose" class="ai-close" type="button" aria-label="閉じる"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="pop-grid"><button class="pop-swatch" type="button" data-pick="#000000" style="--swatch-color:#000000" aria-label="#000000"></button><button class="pop-swatch" type="button" data-pick="#374151" style="--swatch-color:#374151" aria-label="#374151"></button><button class="pop-swatch" type="button" data-pick="#6b7280" style="--swatch-color:#6b7280" aria-label="#6b7280"></button><button class="pop-swatch" type="button" data-pick="#9ca3af" style="--swatch-color:#9ca3af" aria-label="#9ca3af"></button><button class="pop-swatch" type="button" data-pick="#d1d5db" style="--swatch-color:#d1d5db" aria-label="#d1d5db"></button><button class="pop-swatch" type="button" data-pick="#e5e7eb" style="--swatch-color:#e5e7eb" aria-label="#e5e7eb"></button><button class="pop-swatch" type="button" data-pick="#f3f4f6" style="--swatch-color:#f3f4f6" aria-label="#f3f4f6"></button><button class="pop-swatch" type="button" data-pick="#ffffff" style="--swatch-color:#ffffff" aria-label="#ffffff"></button><button class="pop-swatch" type="button" data-pick="#7f1d1d" style="--swatch-color:#7f1d1d" aria-label="#7f1d1d"></button><button class="pop-swatch" type="button" data-pick="#b91c1c" style="--swatch-color:#b91c1c" aria-label="#b91c1c"></button><button class="pop-swatch" type="button" data-pick="#ef4444" style="--swatch-color:#ef4444" aria-label="#ef4444"></button><button class="pop-swatch" type="button" data-pick="#f87171" style="--swatch-color:#f87171" aria-label="#f87171"></button><button class="pop-swatch" type="button" data-pick="#fecaca" style="--swatch-color:#fecaca" aria-label="#fecaca"></button><button class="pop-swatch" type="button" data-pick="#ff2bd6" style="--swatch-color:#ff2bd6" aria-label="#ff2bd6"></button><button class="pop-swatch" type="button" data-pick="#ec4899" style="--swatch-color:#ec4899" aria-label="#ec4899"></button><button class="pop-swatch" type="button" data-pick="#f9a8d4" style="--swatch-color:#f9a8d4" aria-label="#f9a8d4"></button><button class="pop-swatch" type="button" data-pick="#78350f" style="--swatch-color:#78350f" aria-label="#78350f"></button><button class="pop-swatch" type="button" data-pick="#a16207" style="--swatch-color:#a16207" aria-label="#a16207"></button><button class="pop-swatch" type="button" data-pick="#c2410c" style="--swatch-color:#c2410c" aria-label="#c2410c"></button><button class="pop-swatch" type="button" data-pick="#f97316" style="--swatch-color:#f97316" aria-label="#f97316"></button><button class="pop-swatch" type="button" data-pick="#fdba74" style="--swatch-color:#fdba74" aria-label="#fdba74"></button><button class="pop-swatch" type="button" data-pick="#facc15" style="--swatch-color:#facc15" aria-label="#facc15"></button><button class="pop-swatch" type="button" data-pick="#fde047" style="--swatch-color:#fde047" aria-label="#fde047"></button><button class="pop-swatch" type="button" data-pick="#fef08a" style="--swatch-color:#fef08a" aria-label="#fef08a"></button><button class="pop-swatch" type="button" data-pick="#14532d" style="--swatch-color:#14532d" aria-label="#14532d"></button><button class="pop-swatch" type="button" data-pick="#15803d" style="--swatch-color:#15803d" aria-label="#15803d"></button><button class="pop-swatch" type="button" data-pick="#22c55e" style="--swatch-color:#22c55e" aria-label="#22c55e"></button><button class="pop-swatch" type="button" data-pick="#86efac" style="--swatch-color:#86efac" aria-label="#86efac"></button><button class="pop-swatch" type="button" data-pick="#0f766e" style="--swatch-color:#0f766e" aria-label="#0f766e"></button><button class="pop-swatch" type="button" data-pick="#14b8a6" style="--swatch-color:#14b8a6" aria-label="#14b8a6"></button><button class="pop-swatch" type="button" data-pick="#22e4ff" style="--swatch-color:#22e4ff" aria-label="#22e4ff"></button><button class="pop-swatch" type="button" data-pick="#a5f3fc" style="--swatch-color:#a5f3fc" aria-label="#a5f3fc"></button><button class="pop-swatch" type="button" data-pick="#1e3a8a" style="--swatch-color:#1e3a8a" aria-label="#1e3a8a"></button><button class="pop-swatch" type="button" data-pick="#1d4ed8" style="--swatch-color:#1d4ed8" aria-label="#1d4ed8"></button><button class="pop-swatch" type="button" data-pick="#2563eb" style="--swatch-color:#2563eb" aria-label="#2563eb"></button><button class="pop-swatch" type="button" data-pick="#60a5fa" style="--swatch-color:#60a5fa" aria-label="#60a5fa"></button><button class="pop-swatch" type="button" data-pick="#bfdbfe" style="--swatch-color:#bfdbfe" aria-label="#bfdbfe"></button><button class="pop-swatch" type="button" data-pick="#4c1d95" style="--swatch-color:#4c1d95" aria-label="#4c1d95"></button><button class="pop-swatch" type="button" data-pick="#8b5cff" style="--swatch-color:#8b5cff" aria-label="#8b5cff"></button><button class="pop-swatch" type="button" data-pick="#c4b5fd" style="--swatch-color:#c4b5fd" aria-label="#c4b5fd"></button><button class="pop-swatch" type="button" data-pick="#fde2c8" style="--swatch-color:#fde2c8" aria-label="#fde2c8"></button><button class="pop-swatch" type="button" data-pick="#f5c6a5" style="--swatch-color:#f5c6a5" aria-label="#f5c6a5"></button><button class="pop-swatch" type="button" data-pick="#e0a47a" style="--swatch-color:#e0a47a" aria-label="#e0a47a"></button><button class="pop-swatch" type="button" data-pick="#d4a373" style="--swatch-color:#d4a373" aria-label="#d4a373"></button><button class="pop-swatch" type="button" data-pick="#c68642" style="--swatch-color:#c68642" aria-label="#c68642"></button><button class="pop-swatch" type="button" data-pick="#a47148" style="--swatch-color:#a47148" aria-label="#a47148"></button><button class="pop-swatch" type="button" data-pick="#8d5524" style="--swatch-color:#8d5524" aria-label="#8d5524"></button><button class="pop-swatch" type="button" data-pick="#5c3a21" style="--swatch-color:#5c3a21" aria-label="#5c3a21"></button></div>
+    <div class="pop-section">くわしく選ぶ</div>
+    <canvas id="svCanvas" class="sv-canvas" width="384" height="160" aria-label="明るさと鮮やかさ"></canvas>
+    <input id="hueInput" class="hue-input" type="range" min="0" max="359" value="200" aria-label="色あい">
+    <div class="pop-row">
+      <span id="pickPreview" class="pick-preview"></span>
+      <label class="hex-wrap"><span>#</span><input id="hexInput" type="text" maxlength="7" spellcheck="false" aria-label="色のコード"></label>
+      <button id="pickApply" class="pick-apply" type="button">この色で描く</button>
+    </div>
+    <div id="recentWrap" class="pop-recent-wrap">
+      <div class="pop-section">最近使った色</div>
+      <div id="recentColors" class="pop-recent"></div>
+    </div>
+  </div>
+  <div id="boardsPanel" class="boards-panel" hidden>
+    <div class="ai-head">
+      <strong>紙の一覧</strong>
+      <button id="boardsClose" class="ai-close" type="button" aria-label="閉じる"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <p class="boards-note">描いたものは、この端末のブラウザに自動で保存されます。</p>
+    <div id="boardsGrid" class="boards-grid"></div>
+  </div>
+  <div class="zoom-box ui-float">
+    <button id="zoomOutBtn" class="orb orb-xs" type="button" aria-label="縮小"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    <button id="zoomLabel" class="zoom-label" type="button" title="全体を表示">100%</button>
+    <button id="zoomInBtn" class="orb orb-xs" type="button" aria-label="拡大"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // 用紙サイズ（mm）。表示は 96dpi 換算の px で持つ
+  const MM = 96 / 25.4;
+  const PAPERS = {
+    A3: [297, 420], A4: [210, 297], A5: [148, 210],
+    B4: [257, 364], B5: [182, 257], postcard: [100, 148],
+    yotsugiri: [382, 542], // 画用紙の四つ切
+    wide: null, // 16:9 は px で直接
+  };
+  const GRID = 5 * MM; // 5mm 方眼
+
+  const board = document.getElementById("board");
+  const bgCanvas = document.getElementById("bgCanvas");
+  const inkCanvas = document.getElementById("inkCanvas");
+  const uiCanvas = document.getElementById("uiCanvas");
+  const bgCtx = bgCanvas.getContext("2d");
+  const inkCtx = inkCanvas.getContext("2d");
+  const uiCtx = uiCanvas.getContext("2d");
+  const cache = document.createElement("canvas");
+  const cacheCtx = cache.getContext("2d");
+
+  const state = {
+    mode: "pen",
+    eraserType: "pixel",
+    color: "#111827",
+    size: 6,
+    paper: "A4",
+    orient: "portrait",
+    bg: "plain",
+    strokes: [],
+  };
+  const view = { scale: 1, ox: 0, oy: 0 };
+  let dpr = 1, W = 0, H = 0;
+  let undoStack = [], redoStack = [];
+  let current = null;         // 描いている途中の一筆
+  let objectEraseBefore = null;
+  let cacheValid = false;
+  let spaceDown = false;
+  let cursorPoint = null;
+  let hoverDraw = false;      // D キーを押している間は、押し込まなくても描ける
+
+  // ── 保存・読み込み ──
+  // 紙は IndexedDB に1枚ずつ保存する（localStorage より大きく入る）。道具の設定は localStorage
+  const SETTINGS_KEY = "rakugaki-settings";
+  const DB_NAME = "rakugakisuruzo", DB_STORE = "boards";
+  let boardId = null, boardName = "", boardCreated = 0;
+  let dbPromise = null;
+  const fallbackKey = "rakugaki-boards-fallback"; // IndexedDB が使えないときだけ
+
+  function openDb() {
+    if (!dbPromise) {
+      dbPromise = new Promise((res, rej) => {
+        if (!window.indexedDB) return rej(new Error("no idb"));
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(DB_STORE, { keyPath: "id" });
+        req.onsuccess = () => res(req.result);
+        req.onerror = () => rej(req.error);
+      });
+    }
+    return dbPromise;
+  }
+  function readFallback() { try { return JSON.parse(localStorage.getItem(fallbackKey) || "{}"); } catch (e) { return {}; } }
+  const store = {
+    async all() {
+      try {
+        const db = await openDb();
+        return await new Promise((res, rej) => {
+          const r = db.transaction(DB_STORE).objectStore(DB_STORE).getAll();
+          r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error);
+        });
+      } catch (e) { return Object.values(readFallback()); }
+    },
+    async put(b) {
+      try {
+        const db = await openDb();
+        await new Promise((res, rej) => {
+          const tx = db.transaction(DB_STORE, "readwrite");
+          tx.objectStore(DB_STORE).put(b);
+          tx.oncomplete = res; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+        });
+      } catch (e) {
+        if (e && e.message !== "no idb" && dbPromise) throw e;
+        const all = readFallback(); all[b.id] = b;
+        localStorage.setItem(fallbackKey, JSON.stringify(all));
+      }
+    },
+    async del(id) {
+      try {
+        const db = await openDb();
+        await new Promise((res, rej) => {
+          const tx = db.transaction(DB_STORE, "readwrite");
+          tx.objectStore(DB_STORE).delete(id);
+          tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+        });
+      } catch (e) {
+        const all = readFallback(); delete all[id];
+        localStorage.setItem(fallbackKey, JSON.stringify(all));
+      }
+    },
+  };
+
+  function loadSettings() {
+    try {
+      const d = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+      ["color", "size", "eraserType"].forEach(k => { if (d[k] != null) state[k] = d[k]; });
+      return d;
+    } catch (e) { return {}; }
+  }
+  function saveSettings() {
+    try {
+      const { color, size, eraserType } = state;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ color, size, eraserType, currentId: boardId }));
+    } catch (e) { /* 設定が残らないだけ */ }
+  }
+
+  const saveBadge = () => document.getElementById("saveState");
+  function showSaveState(text, cls) {
+    const el = saveBadge();
+    if (!el) return;
+    el.textContent = text;
+    el.className = "save-state " + (cls || "");
+  }
+  let saveTimer = 0, saving = null, dirty = false;
+  function boardRecord(withThumb) {
+    const rec = {
+      id: boardId, name: boardName, created: boardCreated || Date.now(), updated: Date.now(),
+      paper: state.paper, orient: state.orient, bg: state.bg, strokes: state.strokes,
+    };
+    if (withThumb) rec.thumb = makeBoardThumb();
+    return rec;
+  }
+  async function saveNow() {
+    clearTimeout(saveTimer);
+    saveSettings();
+    if (!boardId || !dirty) return;
+    dirty = false;
+    showSaveState("保存中…", "busy");
+    const rec = boardRecord(true);
+    const p = store.put(rec).then(() => {
+      boardsCache.set(rec.id, rec);
+      if (!dirty) showSaveState("保存しました", "ok");
+    }).catch(() => {
+      dirty = true;
+      showSaveState("保存できませんでした（端末の空き容量を確認してください）", "error");
+    });
+    saving = p;
+    return p;
+  }
+  function save() {
+    dirty = true;
+    saveSettings();
+    showSaveState("保存中…", "busy");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNow, 400);
+  }
+  window.addEventListener("pagehide", () => { saveNow(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
+  window.addEventListener("beforeunload", e => { if (dirty) { saveNow(); e.preventDefault(); e.returnValue = ""; } });
+
+  // ── 用紙 ──
+  function paperRect() {
+    if (state.paper === "free") return null;
+    let w, h;
+    if (state.paper === "wide") { w = 1280; h = 720; if (state.orient === "portrait") [w, h] = [h, w]; }
+    else {
+      [w, h] = PAPERS[state.paper].map(v => Math.round(v * MM));
+      if (state.orient === "landscape") [w, h] = [h, w];
+    }
+    return { x: 0, y: 0, w, h };
+  }
+
+  // ── 座標変換 ──
+  const toPaper = (sx, sy) => [(sx - view.ox) / view.scale, (sy - view.oy) / view.scale];
+  function eventPoint(e) {
+    const r = board.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  }
+  function setTransform(ctx) {
+    ctx.setTransform(dpr * view.scale, 0, 0, dpr * view.scale, dpr * view.ox, dpr * view.oy);
+  }
+
+  function fitView() {
+    const p = paperRect();
+    if (!p) { view.scale = 1; view.ox = 0; view.oy = 0; }
+    else {
+      // 左の道具の列と下の色の帯にかからない所に、紙全体を収める
+      const narrow = W <= 760;
+      const padL = narrow ? 80 : 96, padR = narrow ? 8 : 32, padT = narrow ? 64 : 32, padB = narrow ? 120 : 104;
+      const aw = Math.max(40, W - padL - padR), ah = Math.max(40, H - padT - padB);
+      const s = Math.min(aw / p.w, ah / p.h);
+      view.scale = Math.max(0.05, Math.min(s, 4));
+      view.ox = padL + (aw - p.w * view.scale) / 2;
+      view.oy = padT + (ah - p.h * view.scale) / 2;
+    }
+    viewChanged();
+  }
+  function zoomAt(sx, sy, factor) {
+    const ns = Math.max(0.1, Math.min(8, view.scale * factor));
+    const [px, py] = toPaper(sx, sy);
+    view.scale = ns;
+    view.ox = sx - px * ns;
+    view.oy = sy - py * ns;
+    viewChanged();
+  }
+  function viewChanged() {
+    cacheValid = false;
+    document.getElementById("zoomLabel").textContent = Math.round(view.scale * 100) + "%";
+    renderAll();
+  }
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    const nw = board.clientWidth, nh = board.clientHeight;
+    // 画面の大きさが変わっても、見ている中心がずれないようにする
+    if (W && H) { view.ox += (nw - W) / 2; view.oy += (nh - H) / 2; }
+    W = nw; H = nh;
+    [bgCanvas, inkCanvas, uiCanvas, cache].forEach(c => { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); });
+    cacheValid = false;
+  }
+
+  // ── 背景 ──
+  function drawPattern(ctx, x0, y0, x1, y1, unit) {
+    if (state.bg === "plain") return;
+    ctx.save();
+    const lw = 1 / unit; // 画面上で1px
+    if (state.bg === "dots") {
+      ctx.fillStyle = "#cbd5e1";
+      const r = 1.2 / unit;
+      for (let x = Math.ceil(x0 / GRID) * GRID; x <= x1; x += GRID)
+        for (let y = Math.ceil(y0 / GRID) * GRID; y <= y1; y += GRID) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+    } else {
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      if (state.bg === "grid") {
+        for (let x = Math.ceil(x0 / GRID) * GRID; x <= x1; x += GRID) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
+        for (let y = Math.ceil(y0 / GRID) * GRID; y <= y1; y += GRID) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
+        ctx.strokeStyle = "#e2e8f0";
+      } else {
+        const step = 8 * MM;
+        for (let y = Math.ceil(y0 / step) * step; y <= y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
+        ctx.strokeStyle = "#cbd5e1";
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function renderBg() {
+    bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    const p = paperRect();
+    setTransform(bgCtx);
+    const [vx0, vy0] = toPaper(0, 0), [vx1, vy1] = toPaper(W, H);
+    // 画面上の1目盛りが細かすぎるときは模様を描かない
+    const tooDense = GRID * view.scale < 4;
+    if (!p) {
+      bgCtx.fillStyle = "#ffffff";
+      bgCtx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0);
+      if (!tooDense) drawPattern(bgCtx, vx0, vy0, vx1, vy1, view.scale);
+    } else {
+      bgCtx.save();
+      bgCtx.shadowColor = "rgba(34,228,255,0.35)";
+      bgCtx.shadowBlur = 32;
+      bgCtx.shadowOffsetY = 0;
+      bgCtx.fillStyle = "#ffffff";
+      bgCtx.fillRect(p.x, p.y, p.w, p.h);
+      bgCtx.restore();
+      if (!tooDense) {
+        bgCtx.save();
+        bgCtx.beginPath(); bgCtx.rect(p.x, p.y, p.w, p.h); bgCtx.clip();
+        drawPattern(bgCtx, Math.max(p.x, vx0), Math.max(p.y, vy0), Math.min(p.x + p.w, vx1), Math.min(p.y + p.h, vy1), view.scale);
+        bgCtx.restore();
+      }
+    }
+  }
+
+  // ── 線 ──
+  // AIの絵は画像のまま貼る（{tool:"image", src, x, y, w, h}）
+  const imageEls = new Map();
+  function imageEl(src) {
+    let im = imageEls.get(src);
+    if (!im) {
+      im = new Image();
+      im.onload = () => { cacheValid = false; renderInk(); };
+      im.src = src;
+      imageEls.set(src, im);
+    }
+    return im;
+  }
+  function drawStroke(ctx, s) {
+    if (s.tool === "image") {
+      const im = imageEl(s.src);
+      if (im.complete && im.naturalWidth) ctx.drawImage(im, s.x, s.y, s.w, s.h);
+      return;
+    }
+    const pts = s.pts;
+    if (!pts.length) return;
+    if (s.zig) { // 色塗りのジグザグ：角を丸めず点をそのまま結ぶ
+      ctx.save();
+      ctx.globalCompositeOperation = s.tool === "erase" ? "destination-out" : "source-over";
+      ctx.strokeStyle = s.color; ctx.lineWidth = s.size; ctx.lineCap = "butt"; ctx.lineJoin = "bevel";
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.stroke(); ctx.restore();
+      return;
+    }
+    ctx.save();
+    ctx.globalCompositeOperation = s.tool === "erase" ? "destination-out" : "source-over";
+    ctx.strokeStyle = ctx.fillStyle = s.tool === "erase" ? "#000" : s.color;
+    ctx.lineWidth = s.size;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    if (pts.length === 1) {
+      ctx.beginPath(); ctx.arc(pts[0][0], pts[0][1], s.size / 2, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length - 1; i++) {
+        const mx = (pts[i][0] + pts[i + 1][0]) / 2, my = (pts[i][1] + pts[i + 1][1]) / 2;
+        ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+      }
+      const last = pts[pts.length - 1];
+      ctx.lineTo(last[0], last[1]);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function clipPaper(ctx) {
+    const p = paperRect();
+    if (p) { ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip(); }
+  }
+
+  function rebuildCache() {
+    cacheCtx.setTransform(1, 0, 0, 1, 0, 0);
+    cacheCtx.clearRect(0, 0, cache.width, cache.height);
+    setTransform(cacheCtx);
+    cacheCtx.save();
+    clipPaper(cacheCtx);
+    for (const s of state.strokes) drawStroke(cacheCtx, s);
+    cacheCtx.restore();
+    cacheValid = true;
+  }
+  function renderInk() {
+    if (!cacheValid) rebuildCache();
+    inkCtx.setTransform(1, 0, 0, 1, 0, 0);
+    inkCtx.clearRect(0, 0, inkCanvas.width, inkCanvas.height);
+    inkCtx.drawImage(cache, 0, 0);
+    if (current) {
+      setTransform(inkCtx);
+      inkCtx.save();
+      clipPaper(inkCtx);
+      drawStroke(inkCtx, current);
+      inkCtx.restore();
+    }
+  }
+  function renderUi() {
+    uiCtx.setTransform(1, 0, 0, 1, 0, 0);
+    uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+    if (state.mode !== "eraser" || !cursorPoint || spaceDown) return;
+    const r = Math.max(3, eraserRadius() * view.scale);
+    uiCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    uiCtx.beginPath();
+    uiCtx.arc(cursorPoint[0], cursorPoint[1], r, 0, Math.PI * 2);
+    uiCtx.fillStyle = "rgba(34,228,255,0.10)";
+    uiCtx.fill();
+    uiCtx.lineWidth = 1.5;
+    uiCtx.strokeStyle = state.eraserType === "object" ? "rgba(255,43,214,0.95)" : "rgba(34,228,255,0.95)";
+    uiCtx.stroke();
+  }
+  function renderAll() { renderBg(); renderInk(); renderUi(); }
+
+  // ── 履歴 ──
+  function pushHistory(before) {
+    undoStack.push(before);
+    if (undoStack.length > 200) undoStack.shift();
+    redoStack = [];
+    historyChanged();
+  }
+  function historyChanged() {
+    document.getElementById("undoBtn").disabled = !undoStack.length;
+    document.getElementById("redoBtn").disabled = !redoStack.length;
+    cacheValid = false;
+    renderInk();
+    save();
+  }
+  function undo() {
+    if (!undoStack.length) return;
+    redoStack.push(state.strokes);
+    state.strokes = undoStack.pop();
+    historyChanged();
+  }
+  function redo() {
+    if (!redoStack.length) return;
+    undoStack.push(state.strokes);
+    state.strokes = redoStack.pop();
+    historyChanged();
+  }
+
+  // ── 消しゴム（オブジェクト） ──
+  const eraserRadius = () => Math.max(state.size * 1.5, 6) / 2;
+  function segDist2(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay;
+    const len = dx * dx + dy * dy;
+    let t = len ? ((px - ax) * dx + (py - ay) * dy) / len : 0;
+    t = Math.max(0, Math.min(1, t));
+    const x = ax + t * dx - px, y = ay + t * dy - py;
+    return x * x + y * y;
+  }
+  function hits(s, x, y, r) {
+    if (s.tool === "image") return x >= s.x - r && x <= s.x + s.w + r && y >= s.y - r && y <= s.y + s.h + r;
+    const lim = (r + s.size / 2) ** 2;
+    const p = s.pts;
+    if (p.length === 1) return (p[0][0] - x) ** 2 + (p[0][1] - y) ** 2 <= lim;
+    for (let i = 1; i < p.length; i++) if (segDist2(x, y, p[i - 1][0], p[i - 1][1], p[i][0], p[i][1]) <= lim) return true;
+    return false;
+  }
+  function objectEraseAt(x, y) {
+    const r = eraserRadius();
+    const next = state.strokes.filter(s => s.tool === "erase" || !hits(s, x, y, r));
+    if (next.length !== state.strokes.length) {
+      state.strokes = next;
+      cacheValid = false;
+      renderInk();
+    }
+  }
+
+  // ── 入力 ──
+  const pointers = new Map();
+  let pinch = null;
+  let pan = null;
+
+  function startPinch() {
+    const [a, b] = [...pointers.values()];
+    pinch = {
+      dist: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1,
+      cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2,
+      scale: view.scale, ox: view.ox, oy: view.oy,
+    };
+  }
+  function cancelCurrent() {
+    if (current) { current = null; renderInk(); }
+    if (objectEraseBefore) {
+      if (objectEraseBefore !== state.strokes) pushHistory(objectEraseBefore);
+      objectEraseBefore = null;
+    }
+  }
+
+  board.addEventListener("pointerdown", e => {
+    if (e.button !== 0 && e.button !== 1) return;
+    board.setPointerCapture(e.pointerId);
+    const pt = eventPoint(e);
+    pointers.set(e.pointerId, pt);
+
+    if (pointers.size === 2) { cancelCurrent(); pan = null; if (!viewLocked()) startPinch(); return; }
+    if (pointers.size > 2) return;
+
+    if (e.button === 1 && viewLocked()) return;
+    if (!viewLocked() && (e.button === 1 || spaceDown || state.mode === "hand")) {
+      pan = { sx: pt[0], sy: pt[1], ox: view.ox, oy: view.oy };
+      board.classList.add("panning");
+      return;
+    }
+    if (hoverDraw) finishDraw();
+    beginDraw(pt);
+  });
+
+  function beginDraw(pt) {
+    const [x, y] = toPaper(pt[0], pt[1]);
+    if (state.mode === "pen") {
+      current = { tool: "pen", color: state.color, size: state.size, pts: [[x, y]] };
+      renderInk();
+    } else if (state.mode === "eraser") {
+      if (state.eraserType === "pixel") {
+        current = { tool: "erase", size: eraserRadius() * 2, pts: [[x, y]] };
+        renderInk();
+      } else {
+        objectEraseBefore = state.strokes;
+        objectEraseAt(x, y);
+      }
+    }
+  }
+  function finishDraw() {
+    if (current) {
+      const before = state.strokes;
+      state.strokes = before.concat([current]);
+      current = null;
+      pushHistory(before);
+    } else if (objectEraseBefore) {
+      if (objectEraseBefore !== state.strokes) pushHistory(objectEraseBefore);
+      objectEraseBefore = null;
+    }
+  }
+
+  board.addEventListener("pointermove", e => {
+    const pt = eventPoint(e);
+    if (e.pointerType !== "touch") { cursorPoint = pt; renderUi(); }
+    if (!pointers.has(e.pointerId) && !hoverDraw) return;
+    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, pt);
+
+    if (pinch && pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1;
+      const cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2;
+      const ns = Math.max(0.1, Math.min(8, pinch.scale * d / pinch.dist));
+      const px = (pinch.cx - pinch.ox) / pinch.scale, py = (pinch.cy - pinch.oy) / pinch.scale;
+      view.scale = ns;
+      view.ox = cx - px * ns;
+      view.oy = cy - py * ns;
+      viewChanged();
+      return;
+    }
+    if (pan) {
+      view.ox = pan.ox + pt[0] - pan.sx;
+      view.oy = pan.oy + pt[1] - pan.sy;
+      viewChanged();
+      return;
+    }
+    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    const r = board.getBoundingClientRect();
+    for (const ev of (events.length ? events : [e])) {
+      const [x, y] = toPaper(ev.clientX - r.left, ev.clientY - r.top);
+      if (current) {
+        const last = current.pts[current.pts.length - 1];
+        if (Math.hypot(x - last[0], y - last[1]) * view.scale >= 1) current.pts.push([x, y]);
+      } else if (objectEraseBefore) {
+        objectEraseAt(x, y);
+      }
+    }
+    if (current) renderInk();
+  });
+
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (pinch) { if (pointers.size < 2) pinch = null; return; }
+    if (pan) { pan = null; board.classList.remove("panning"); return; }
+    finishDraw();
+  }
+  board.addEventListener("pointerup", endPointer);
+  board.addEventListener("pointercancel", endPointer);
+  board.addEventListener("pointerleave", e => {
+    if (e.pointerType === "touch") return;
+    cursorPoint = null; renderUi();
+    if (hoverDraw && !pointers.size) finishDraw(); // 画面の外へ出たら一筆を区切る
+  });
+  board.addEventListener("pointerenter", e => {
+    if (hoverDraw && !current && !objectEraseBefore && !pointers.size) beginDraw(eventPoint(e));
+  });
+
+  // 用紙を選んでいるときは紙を固定する（動かない・拡大縮小しない）
+  function viewLocked() { return state.paper !== "free"; }
+  board.addEventListener("wheel", e => {
+    e.preventDefault();
+    if (viewLocked()) return;
+    const [sx, sy] = eventPoint(e);
+    if (e.ctrlKey || e.metaKey) zoomAt(sx, sy, Math.exp(-e.deltaY * 0.01));
+    else { view.ox -= e.deltaX; view.oy -= e.deltaY; viewChanged(); }
+  }, { passive: false });
+
+  // ── 道具の切り替え ──
+  function setMode(mode) {
+    state.mode = mode;
+    document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+    board.className = "board mode-" + mode;
+    document.getElementById("colorWrap").hidden = mode === "eraser";
+    document.getElementById("eraserTypeWrap").hidden = mode !== "eraser";
+    renderUi();
+  }
+  function setColor(color) {
+    state.color = color;
+    document.querySelectorAll("[data-color]").forEach(b => b.classList.toggle("active", b.dataset.color === color));
+    const more = document.getElementById("moreColorBtn");
+    if (more) {
+      const custom = !document.querySelector(`.dock-colors [data-color="${color}"]`);
+      more.classList.toggle("active", custom);
+      more.style.setProperty("--cur", custom ? color : "#0d0d1a");
+    }
+    updateSizeDot();
+    save();
+  }
+  function setEraserType(t) {
+    state.eraserType = t === "object" ? "object" : "pixel";
+    document.querySelectorAll("[data-eraser-type]").forEach(b => b.classList.toggle("active", b.dataset.eraserType === state.eraserType));
+    renderUi();
+    save();
+  }
+  function updateSizeDot() {
+    const dot = document.getElementById("sizeDot");
+    const d = Math.max(8, Math.min(24, state.size * 0.6));
+    dot.style.width = dot.style.height = d + "px";
+    dot.style.background = state.color;
+  }
+  function syncPaperUi() {
+    document.getElementById("paperSelect").value = state.paper;
+    document.getElementById("bgSelect").value = state.bg;
+    document.getElementById("orientWrap").hidden = state.paper === "free";
+    document.querySelectorAll("[data-orient]").forEach(b => b.classList.toggle("active", b.dataset.orient === state.orient));
+    document.body.classList.toggle("paper-locked", viewLocked());
+    if (viewLocked() && state.mode === "hand") setMode("pen");
+  }
+
+  document.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  document.querySelectorAll("[data-color]").forEach(b => b.addEventListener("click", () => { setColor(b.dataset.color); setMode("pen"); }));
+  document.querySelectorAll("[data-eraser-type]").forEach(b => b.addEventListener("click", () => setEraserType(b.dataset.eraserType)));
+  document.querySelectorAll("[data-orient]").forEach(b => b.addEventListener("click", () => {
+    state.orient = b.dataset.orient; syncPaperUi(); fitView(); save();
+  }));
+  const sizeInput = document.getElementById("sizeInput");
+  sizeInput.addEventListener("input", () => { state.size = Number(sizeInput.value); updateSizeDot(); renderUi(); save(); });
+  document.getElementById("paperSelect").addEventListener("change", e => {
+    state.paper = e.target.value; syncPaperUi(); fitView(); save();
+  });
+  document.getElementById("bgSelect").addEventListener("change", e => { state.bg = e.target.value; renderBg(); save(); });
+  document.getElementById("undoBtn").addEventListener("click", undo);
+  document.getElementById("redoBtn").addEventListener("click", redo);
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    if (!state.strokes.length) return;
+    if (!confirm("描いたものを全部消しますか？（「一つ戻す」で元に戻せます）")) return;
+    pushHistory(state.strokes);
+    state.strokes = [];
+    historyChanged();
+  });
+  document.getElementById("zoomInBtn").addEventListener("click", () => zoomAt(W / 2, H / 2, 1.25));
+  document.getElementById("zoomOutBtn").addEventListener("click", () => zoomAt(W / 2, H / 2, 0.8));
+  document.getElementById("zoomLabel").addEventListener("click", fitView);
+  document.getElementById("saveBtn").addEventListener("click", exportPng);
+
+  window.addEventListener("keydown", e => {
+    if (["SELECT", "INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
+    if (mod) return;
+    if (e.code === "KeyD") {
+      e.preventDefault();
+      if (!e.repeat && !hoverDraw && !pointers.size && cursorPoint && (state.mode === "pen" || state.mode === "eraser")) {
+        hoverDraw = true;
+        board.classList.add("hover-drawing");
+        beginDraw(cursorPoint);
+      }
+      return;
+    }
+    if (e.code === "Space" && viewLocked()) { e.preventDefault(); return; }
+    if (e.code === "Space") { if (!spaceDown) { spaceDown = true; board.classList.add("mode-hand"); renderUi(); } e.preventDefault(); return; }
+    const k = e.key.toLowerCase();
+    if (k === "p") setMode("pen");
+    else if (k === "e") setMode("eraser");
+    else if (k === "h" && !viewLocked()) setMode("hand");
+  });
+  function stopHoverDraw() {
+    if (!hoverDraw) return;
+    hoverDraw = false;
+    board.classList.remove("hover-drawing");
+    if (!pointers.size) finishDraw();
+  }
+  window.addEventListener("blur", stopHoverDraw);
+  window.addEventListener("keyup", e => {
+    if (e.code === "KeyD") stopHoverDraw();
+    if (e.code === "Space") { spaceDown = false; board.classList.remove("mode-hand"); board.classList.add("mode-" + state.mode); renderUi(); }
+  });
+
+  // ── 画像で保存 ──
+  function inkBounds() {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const s of state.strokes) {
+      if (s.tool === "erase") continue;
+      if (s.tool === "image") {
+        x0 = Math.min(x0, s.x); y0 = Math.min(y0, s.y); x1 = Math.max(x1, s.x + s.w); y1 = Math.max(y1, s.y + s.h);
+        continue;
+      }
+      const h = s.size / 2;
+      for (const [x, y] of s.pts) { x0 = Math.min(x0, x - h); y0 = Math.min(y0, y - h); x1 = Math.max(x1, x + h); y1 = Math.max(y1, y + h); }
+    }
+    return isFinite(x0) ? { x: x0 - 24, y: y0 - 24, w: x1 - x0 + 48, h: y1 - y0 + 48 } : null;
+  }
+  function renderToCanvas(rect, scale, noPattern = false) {
+    const w = Math.max(1, Math.round(rect.w * scale)), h = Math.max(1, Math.round(rect.h * scale));
+    const out = document.createElement("canvas");
+    out.width = w; out.height = h;
+    const o = out.getContext("2d");
+    const ink = document.createElement("canvas");
+    ink.width = w; ink.height = h;
+    const i = ink.getContext("2d");
+    const t = [scale, 0, 0, scale, -rect.x * scale, -rect.y * scale];
+    o.fillStyle = "#ffffff"; o.fillRect(0, 0, w, h);
+    o.setTransform(...t);
+    if (!noPattern) drawPattern(o, rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, scale);
+    i.setTransform(...t);
+    for (const s of state.strokes) drawStroke(i, s);
+    o.setTransform(1, 0, 0, 1, 0, 0);
+    o.drawImage(ink, 0, 0);
+    return out;
+  }
+  function makeBoardThumb() {
+    try {
+      const rect = paperRect() || inkBounds() || { x: 0, y: 0, w: 400, h: 300 };
+      const c = renderToCanvas(rect, 220 / Math.max(rect.w, rect.h));
+      return c.toDataURL("image/webp", 0.7);
+    } catch (e) { return null; }
+  }
+  function exportPng() {
+    const rect = paperRect() || inkBounds();
+    if (!rect) { alert("まだ何も描かれていません"); return; }
+    const out = renderToCanvas(rect, Math.min(2, 8000 / Math.max(rect.w, rect.h)));
+    out.toBlob(blob => {
+      if (!blob) return;
+      const a = document.createElement("a");
+      const d = new Date();
+      const pad = n => String(n).padStart(2, "0");
+      const safe = (boardName || "らくがきするぞ").replace(/[\\/:*?"<>|]/g, "_");
+      a.download = `${safe}_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.png`;
+      a.href = URL.createObjectURL(blob);
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }, "image/png");
+  }
+
+  // ── 紙の一覧（何枚でも） ──
+  const boardsCache = new Map();
+  const newId = () => "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  function applyBoard(b) {
+    boardId = b.id; boardName = b.name; boardCreated = b.created || Date.now();
+    state.paper = (b.paper in PAPERS || b.paper === "free") ? b.paper : "A4";
+    state.orient = b.orient === "landscape" ? "landscape" : "portrait";
+    state.bg = b.bg || "plain";
+    state.strokes = Array.isArray(b.strokes) ? b.strokes : [];
+    undoStack = []; redoStack = [];
+    current = null; objectEraseBefore = null;
+    document.getElementById("boardName").textContent = boardName;
+    syncPaperUi();
+    fitView();
+    document.getElementById("undoBtn").disabled = true;
+    document.getElementById("redoBtn").disabled = true;
+    cacheValid = false;
+    renderAll();
+    saveSettings();
+    showSaveState("保存しました", "ok");
+  }
+  async function nextName() {
+    const all = await store.all();
+    let n = all.length + 1;
+    const names = new Set(all.map(b => b.name));
+    while (names.has("紙" + n)) n++;
+    return "紙" + n;
+  }
+  async function createBoard() {
+    await saveNow();
+    const b = { id: newId(), name: await nextName(), created: Date.now(), updated: Date.now(),
+      paper: state.paper, orient: state.orient, bg: state.bg, strokes: [] };
+    await store.put(b);
+    boardsCache.set(b.id, b);
+    applyBoard(b);
+  }
+  async function openBoard(id) {
+    if (id === boardId) return;
+    await saveNow();
+    const all = await store.all();
+    const b = all.find(x => x.id === id);
+    if (b) applyBoard(b);
+  }
+
+  const boardsPanel = document.getElementById("boardsPanel");
+  const boardsGrid = document.getElementById("boardsGrid");
+  const fmtDate = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+  async function renderBoards() {
+    await saveNow();
+    const all = (await store.all()).sort((a, b) => (b.updated || 0) - (a.updated || 0));
+    const cards = all.map(b => {
+      const card = document.createElement("div");
+      card.className = "board-card" + (b.id === boardId ? " current" : "");
+      const open = document.createElement("button");
+      open.type = "button"; open.className = "board-open";
+      open.title = "この紙を開く";
+      const im = document.createElement("div");
+      im.className = "board-thumb";
+      if (b.thumb) { const i = document.createElement("img"); i.src = b.thumb; i.alt = ""; im.appendChild(i); }
+      const nm = document.createElement("span"); nm.className = "board-name"; nm.textContent = b.name;
+      const dt = document.createElement("span"); dt.className = "board-date"; dt.textContent = (b.id === boardId ? "開いている紙・" : "") + fmtDate(b.updated || b.created);
+      open.append(im, nm, dt);
+      open.addEventListener("click", async () => { await openBoard(b.id); toggleBoards(false); });
+      const tools = document.createElement("div"); tools.className = "board-tools";
+      const ren = document.createElement("button"); ren.type = "button"; ren.textContent = "名前";
+      ren.addEventListener("click", async () => {
+        const v = prompt("紙の名前", b.name);
+        if (v == null || !v.trim()) return;
+        b.name = v.trim().slice(0, 40);
+        if (b.id === boardId) { boardName = b.name; document.getElementById("boardName").textContent = boardName; dirty = true; await saveNow(); }
+        else await store.put(b);
+        renderBoards();
+      });
+      const del = document.createElement("button"); del.type = "button"; del.textContent = "削除"; del.className = "danger";
+      del.addEventListener("click", async () => {
+        if (!confirm(`「${b.name}」を削除しますか？この紙は元に戻せません。`)) return;
+        await store.del(b.id);
+        boardsCache.delete(b.id);
+        if (b.id === boardId) {
+          dirty = false; boardId = null;
+          const rest = (await store.all()).sort((x, y) => (y.updated || 0) - (x.updated || 0));
+          if (rest.length) applyBoard(rest[0]); else await createBoard();
+        }
+        renderBoards();
+      });
+      tools.append(ren, del);
+      card.append(open, tools);
+      return card;
+    });
+    const add = document.createElement("button");
+    add.type = "button"; add.className = "board-card board-add";
+    add.innerHTML = '<svg class="ico board-add-plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>新しい紙</span>';
+    add.addEventListener("click", async () => { await createBoard(); toggleBoards(false); });
+    boardsGrid.replaceChildren(add, ...cards);
+  }
+  function toggleBoards(open) {
+    boardsPanel.hidden = !open;
+    document.getElementById("boardsBtn").setAttribute("aria-expanded", String(open));
+    if (open) renderBoards();
+  }
+  document.getElementById("boardsBtn").addEventListener("click", () => toggleBoards(boardsPanel.hidden));
+  document.getElementById("boardsClose").addEventListener("click", () => toggleBoards(false));
+  boardsPanel.addEventListener("pointerdown", e => e.stopPropagation());
+
+  async function initBoards() {
+    const settings = loadSettings();
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* 任意 */ }
+    let all = await store.all();
+    if (!all.length) {
+      // 以前の1枚だけの保存（whiteboard-v1）があれば、それを最初の紙にする
+      let old = null;
+      try { old = JSON.parse(localStorage.getItem("whiteboard-v1") || "null"); } catch (e) { old = null; }
+      const b = { id: newId(), name: "紙1", created: Date.now(), updated: Date.now(),
+        paper: old?.paper || "A4", orient: old?.orient || "portrait", bg: old?.bg || "plain",
+        strokes: Array.isArray(old?.strokes) ? old.strokes : [] };
+      if (old) ["color", "size", "eraserType"].forEach(k => { if (old[k] != null && settings[k] == null) state[k] = old[k]; });
+      await store.put(b);
+      all = [b];
+    }
+    const cur = all.find(b => b.id === settings.currentId) || all.sort((a, b) => (b.updated || 0) - (a.updated || 0))[0];
+    applyBoard(cur);
+    sizeInput.value = state.size;
+    setColor(state.color);
+    setEraserType(state.eraserType);
+  }
+
+
+  // ── AIに頼む（AIが作った画像を、横向きの短い線の集まりに変えて描き込む） ──
+  const r1 = v => Math.round(v * 10) / 10;
+  const hex2 = v => Math.round(v).toString(16).padStart(2, "0");
+
+  // AIの下絵を、このアプリのペンの線（輪郭線＋色塗り）に描き直す
+  async function loadPixels(src, maxSide) {
+    const img = new Image();
+    img.src = src;
+    await img.decode();
+    const k0 = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * k0)), h = Math.max(1, Math.round(img.height * k0));
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(img, 0, 0, w, h);
+    return { w, h, d: g.getImageData(0, 0, w, h).data };
+  }
+
+  function whiteBalance(d, w, h) {
+    // 紙がうっすら灰色・黄ばみのときは、縁の色が真っ白になるよう全体を明るくそろえる
+    const edge = [[], [], []];
+    for (let x = 0; x < w; x += 3) for (const y of [0, 1, h - 2, h - 1]) for (let c = 0; c < 3; c++) edge[c].push(d[(y * w + x) * 4 + c]);
+    for (let y = 0; y < h; y += 3) for (const x of [0, 1, w - 2, w - 1]) for (let c = 0; c < 3; c++) edge[c].push(d[(y * w + x) * 4 + c]);
+    const med = edge.map(a => a.sort((m, n) => m - n)[a.length >> 1]);
+    if (Math.min(...med) > 165 && Math.max(...med) - Math.min(...med) < 30 && Math.min(...med) < 250) {
+      const gain = med.map(v => 250 / v);
+      for (let i = 0; i < d.length; i += 4) for (let c = 0; c < 3; c++) d[i + c] = Math.min(255, d[i + c] * gain[c]);
+    }
+  }
+
+  function backgroundMask(d, w, h) {
+    // 外側からつながっている白っぽい所だけを背景にする（絵の中の白は残す）
+    const light = i => {
+      const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+      return d[i * 4 + 3] < 24 || (Math.min(r, g, b) > 228 && Math.max(r, g, b) - Math.min(r, g, b) < 24);
+    };
+    const bg = new Uint8Array(w * h);
+    const stack = [];
+    for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
+    for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
+    while (stack.length) {
+      const i = stack.pop();
+      if (bg[i] || !light(i)) continue;
+      bg[i] = 1;
+      const x = i % w, y = (i / w) | 0;
+      if (x > 0) stack.push(i - 1);
+      if (x < w - 1) stack.push(i + 1);
+      if (y > 0) stack.push(i - w);
+      if (y < h - 1) stack.push(i + w);
+    }
+    return bg;
+  }
+
+  // 色を数色にまとめる（ベタ塗りの色鉛筆・マーカーのように塗るため）
+  function kmeans(d, bg, n, k) {
+    const sample = [];
+    for (let i = 0; i < n; i += 3) if (!bg[i]) sample.push(i);
+    if (!sample.length) return { centers: [], label: new Int16Array(n).fill(-1) };
+    const centers = [];
+    for (let j = 0; j < k; j++) {
+      const i = sample[Math.floor((j + 0.5) * sample.length / k)];
+      centers.push([d[i * 4], d[i * 4 + 1], d[i * 4 + 2]]);
+    }
+    const nearest = i => {
+      let best = 0, bd = Infinity;
+      for (let j = 0; j < centers.length; j++) {
+        const c = centers[j];
+        const dr = d[i * 4] - c[0], dg = d[i * 4 + 1] - c[1], db = d[i * 4 + 2] - c[2];
+        const dist = dr * dr * 0.3 + dg * dg * 0.59 + db * db * 0.11;
+        if (dist < bd) { bd = dist; best = j; }
+      }
+      return best;
+    };
+    for (let it = 0; it < 7; it++) {
+      const sum = centers.map(() => [0, 0, 0, 0]);
+      for (const i of sample) {
+        const s = sum[nearest(i)];
+        s[0] += d[i * 4]; s[1] += d[i * 4 + 1]; s[2] += d[i * 4 + 2]; s[3]++;
+      }
+      sum.forEach((s, j) => { if (s[3]) centers[j] = [s[0] / s[3], s[1] / s[3], s[2] / s[3]]; });
+    }
+    const label = new Int16Array(n).fill(-1);
+    for (let i = 0; i < n; i++) if (!bg[i]) label[i] = nearest(i);
+    return { centers, label };
+  }
+
+  // 線を1画素の細さにする（Zhang-Suen）
+  function thin(m, w, h) {
+    let changed = true;
+    const del = [];
+    for (let pass = 0; changed && pass < 40; pass++) {
+      changed = false;
+      for (const step of [0, 1]) {
+        del.length = 0;
+        for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+          const i = y * w + x;
+          if (!m[i]) continue;
+          const p2 = m[i - w], p3 = m[i - w + 1], p4 = m[i + 1], p5 = m[i + w + 1],
+                p6 = m[i + w], p7 = m[i + w - 1], p8 = m[i - 1], p9 = m[i - w - 1];
+          const B = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+          if (B < 2 || B > 6) continue;
+          const seq = [p2, p3, p4, p5, p6, p7, p8, p9, p2];
+          let A = 0;
+          for (let t = 0; t < 8; t++) if (!seq[t] && seq[t + 1]) A++;
+          if (A !== 1) continue;
+          if (step === 0 ? (p2 * p4 * p6 || p4 * p6 * p8) : (p2 * p4 * p8 || p2 * p6 * p8)) continue;
+          del.push(i);
+        }
+        if (del.length) { changed = true; for (const i of del) m[i] = 0; }
+      }
+    }
+    return m;
+  }
+
+  // 細くした線をたどって、一筆ずつの折れ線にする
+  function traceLines(m, w, h) {
+    const N8 = [-w - 1, -w, -w + 1, -1, 1, w - 1, w, w + 1];
+    const deg = i => { let c = 0; for (const o of N8) if (m[i + o]) c++; return c; };
+    const seen = new Uint8Array(w * h);
+    const paths = [];
+    const walk = start => {
+      const pts = [start];
+      seen[start] = 1;
+      let cur = start;
+      for (;;) {
+        let next = -1;
+        for (const o of [-w, -1, 1, w, -w - 1, -w + 1, w - 1, w + 1]) {
+          const j = cur + o;
+          if (m[j] && !seen[j]) { next = j; break; }
+        }
+        if (next < 0) break;
+        seen[next] = 1;
+        pts.push(next);
+        cur = next;
+      }
+      return pts;
+    };
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (m[i] && !seen[i] && deg(i) === 1) paths.push(walk(i));
+    }
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (m[i] && !seen[i]) paths.push(walk(i));
+    }
+    return paths.filter(p => p.length >= 10).map(p => p.map(i => [i % w, (i / w) | 0]));
+  }
+
+  function simplify(pts, eps) {
+    if (pts.length < 3) return pts;
+    const keep = new Uint8Array(pts.length);
+    keep[0] = keep[pts.length - 1] = 1;
+    const st = [[0, pts.length - 1]];
+    while (st.length) {
+      const [a, b] = st.pop();
+      let best = -1, bd = eps * eps;
+      for (let i = a + 1; i < b; i++) {
+        const dd = segDist2(pts[i][0], pts[i][1], pts[a][0], pts[a][1], pts[b][0], pts[b][1]);
+        if (dd > bd) { bd = dd; best = i; }
+      }
+      if (best > 0) { keep[best] = 1; st.push([a, best], [best, b]); }
+    }
+    return pts.filter((_, i) => keep[i]);
+  }
+
+  async function loadPixelsSized(src, w, h) {
+    const img = new Image();
+    img.src = src;
+    await img.decode();
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(img, 0, 0, w, h);
+    return { w, h, d: g.getImageData(0, 0, w, h).data };
+  }
+
+  // 元の紙とAIの絵を比べて、変わった所だけを取り出す（少しのずれは変化とみなさない）
+  function diffMask(o, d, w, h) {
+    const ch = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      let best = 1e9;
+      for (let dy = -3; dy <= 3 && best > 60; dy++) {
+        const yy = y + dy; if (yy < 0 || yy >= h) continue;
+        for (let dx = -3; dx <= 3; dx++) {
+          const xx = x + dx; if (xx < 0 || xx >= w) continue;
+          const j = yy * w + xx;
+          const dd = Math.max(Math.abs(d[i * 4] - o[j * 4]), Math.abs(d[i * 4 + 1] - o[j * 4 + 1]), Math.abs(d[i * 4 + 2] - o[j * 4 + 2]));
+          if (dd < best) best = dd;
+        }
+      }
+      if (best > 60) ch[i] = 1;
+    }
+    // 小さなかたまり（ノイズ）は捨てる
+    const seen = new Uint8Array(w * h);
+    for (let s0 = 0; s0 < w * h; s0++) {
+      if (!ch[s0] || seen[s0]) continue;
+      const comp = [s0]; seen[s0] = 1;
+      for (let k = 0; k < comp.length; k++) {
+        const i = comp[k], x = i % w;
+        for (const j of [i - 1, i + 1, i - w, i + w]) {
+          if (j < 0 || j >= w * h || seen[j] || !ch[j]) continue;
+          if ((j === i - 1 && x === 0) || (j === i + 1 && x === w - 1)) continue;
+          seen[j] = 1; comp.push(j);
+        }
+      }
+      if (comp.length < 90) for (const i of comp) ch[i] = 0;
+    }
+    return ch;
+  }
+
+  async function imageToDrawing(src, target, edit) {
+    let w, h, d, bg, eraseMask = null;
+    if (edit) {
+      const o = await loadPixels(edit.orig, 512);
+      ({ w, h, d } = await loadPixelsSized(src, o.w, o.h));
+      whiteBalance(d, w, h);
+      const ch = diffMask(o.d, d, w, h);
+      bg = new Uint8Array(w * h); eraseMask = new Uint8Array(w * h);
+      const white = (a, i) => Math.min(a[i * 4], a[i * 4 + 1], a[i * 4 + 2]) > 225;
+      for (let i = 0; i < w * h; i++) {
+        if (!ch[i]) { bg[i] = 1; continue; }
+        if (white(d, i)) { bg[i] = 1; if (!white(o.d, i)) eraseMask[i] = 1; }
+      }
+    } else {
+      ({ w, h, d } = await loadPixels(src, 512));
+      whiteBalance(d, w, h);
+      bg = backgroundMask(d, w, h);
+    }
+    const n = w * h;
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (bg[y * w + x] && !(eraseMask && eraseMask[y * w + x])) continue;
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    if (maxX < 0) return null;
+    let px, ox, oy;
+    if (edit) { // 送った紙と同じ位置・大きさのまま重ねる
+      px = target.w / w;
+      ox = target.x + minX * px; oy = target.y + minY * px;
+    } else {
+      const bw = maxX - minX + 1, bh = maxY - minY + 1;
+      px = Math.min(target.w / bw, target.h / bh);
+      ox = target.x + (target.w - bw * px) / 2; oy = target.y + (target.h - bh * px) / 2;
+    }
+    const P = (x, y) => [r1(ox + (x - minX + 0.5) * px), r1(oy + (y - minY + 0.5) * px)];
+    const hex = c => "#" + c.map(v => hex2(Math.max(0, Math.min(255, v)))).join("");
+    const lum = i => d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11;
+
+    // ① 色塗り：数色にまとめ、同じ色のかたまりを、ひと続きのジグザグの線で塗りつぶす
+    const { centers, label } = kmeans(d, bg, n, 12);
+    if (!centers.length && !eraseMask) return null;
+    // 細かいまだらを、まわりで一番多い色にそろえる（塗りと線をすっきりさせる）
+    for (let pass = 0; pass < 3; pass++) {
+      const src = label.slice();
+      const cnt = new Int16Array(centers.length);
+      for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+        const i = y * w + x;
+        if (src[i] < 0) continue;
+        cnt.fill(0);
+        let best = src[i], bc = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const l = src[i + dy * w + dx];
+          if (l >= 0 && ++cnt[l] > bc) { bc = cnt[l]; best = l; }
+        }
+        if (bc >= 5) label[i] = best;
+      }
+    }
+    const rowStep = 2;
+    const fillSize = r1(px * rowStep * 1.15);
+    const PL = (x, y) => [r1(ox + (x - minX) * px), r1(oy + (y - minY + 0.5) * px)];
+    const PR = (x, y) => [r1(ox + (x - minX + 1) * px), r1(oy + (y - minY + 0.5) * px)];
+    // 同じ番号のかたまりを、ひと続きのジグザグの線で塗る
+    const zigzag = (lab, count, colorOf, tool) => {
+      const out = [];
+      const active = Array.from({ length: count }, () => []);
+      const finish = (lb, st) => { if (st.pts.length) out.push({ tool, zig: 1, color: colorOf(lb), size: fillSize, pts: st.pts }); };
+      for (let y = minY; y <= maxY; y += rowStep) {
+        const runs = Array.from({ length: count }, () => []);
+        let x = minX;
+        while (x <= maxX) {
+          const lb = lab[y * w + x];
+          if (lb < 0) { x++; continue; }
+          const start = x;
+          while (x <= maxX && lab[y * w + x] === lb) x++;
+          runs[lb].push([start, x - 1]);
+        }
+        for (let lb = 0; lb < count; lb++) {
+          const next = [];
+          const used = new Set();
+          for (const [x0, x1] of runs[lb]) {
+            // 前の行で塗っていた線とつながっていれば、折り返して続けて塗る
+            let st = null;
+            for (const cand of active[lb]) {
+              if (used.has(cand) || cand.x1 < x0 - 1 || cand.x0 > x1 + 1) continue;
+              st = cand; break;
+            }
+            if (st) {
+              used.add(st);
+              const last = st.pts[st.pts.length - 1];
+              const fromLeft = Math.abs(last[0] - PL(x0, y)[0]) <= Math.abs(last[0] - PR(x1, y)[0]);
+              st.pts.push(fromLeft ? PL(x0, y) : PR(x1, y), fromLeft ? PR(x1, y) : PL(x0, y));
+              st.x0 = x0; st.x1 = x1;
+              next.push(st);
+            } else {
+              next.push({ pts: [PL(x0, y), PR(x1, y)], x0, x1 });
+            }
+          }
+          for (const st of active[lb]) if (!used.has(st)) finish(lb, st);
+          active[lb] = next;
+        }
+      }
+      active.forEach((list, lb) => list.forEach(st => finish(lb, st)));
+      return out;
+    };
+    const fills = zigzag(label, centers.length, lb => hex(centers[lb]), "pen");
+    let erases = [];
+    if (eraseMask) {
+      const el = new Int16Array(n).fill(-1);
+      for (let i = 0; i < n; i++) if (eraseMask[i]) el[i] = 0;
+      erases = zigzag(el, 1, () => "#000", "erase");
+    }
+    fills.sort((a, b) => b.pts.length - a.pts.length);
+
+    // ② 輪郭線：暗い線と、はっきりした色の境目をペンでなぞる
+    const mask = new Uint8Array(n);
+    const bright = new Int32Array((w + 1) * (h + 1)); // 明るい点の数の積分画像
+    for (let y = 0; y < h; y++) {
+      let row = 0;
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        row += (bg[i] || lum(i) > 140) ? 1 : 0;
+        bright[(y + 1) * (w + 1) + x + 1] = bright[y * (w + 1) + x + 1] + row;
+      }
+    }
+    const brightAround = (x, y, r) => {
+      const x0 = Math.max(0, x - r), y0 = Math.max(0, y - r), x1 = Math.min(w, x + r + 1), y1 = Math.min(h, y + r + 1);
+      return bright[y1 * (w + 1) + x1] - bright[y0 * (w + 1) + x1] - bright[y1 * (w + 1) + x0] + bright[y0 * (w + 1) + x0];
+    };
+    const centerLum = centers.map(c => c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11);
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (bg[i]) continue;
+      const lb = label[i];
+      if (lb < 0) continue;
+      if (lum(i) < 70) { if (brightAround(x, y, 4) > 0) mask[i] = 1; continue; }
+      if (centerLum[lb] < 70) continue;
+      const c = centers[lb];
+      for (const j of [i + 1, i + w]) {
+        const lj = label[j];
+        if (lj < 0 || lj === lb || centerLum[lj] < 70) continue;
+        const o = centers[lj];
+        const diff = Math.abs(c[0] - o[0]) * 0.3 + Math.abs(c[1] - o[1]) * 0.59 + Math.abs(c[2] - o[2]) * 0.11;
+        if (diff > 70) { mask[i] = 1; break; }
+      }
+    }
+    thin(mask, w, h);
+    const lines = [];
+    const lineSize = r1(Math.max(1.2, px * 1.6));
+    for (const path of traceLines(mask, w, h)) {
+      // 角を残すため、間引いたあと長い区間に点を足す（なめらか処理で大きく曲がらないように）
+      const sp = simplify(path, 1.0), pts = [sp[0]];
+      for (let q = 1; q < sp.length; q++) {
+        const [ax, ay] = sp[q - 1], [bx, by] = sp[q];
+        const k = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 4));
+        for (let t = 1; t <= k; t++) pts.push([ax + (bx - ax) * t / k, ay + (by - ay) * t / k]);
+      }
+      let sr = 0, sg = 0, sb = 0;
+      for (const [x, y] of path) { const i = y * w + x; sr += d[i * 4]; sg += d[i * 4 + 1]; sb += d[i * 4 + 2]; }
+      const k = path.length;
+      const col = [sr / k * 0.55, sg / k * 0.55, sb / k * 0.55];
+      lines.push({ tool: "pen", color: hex(col), size: lineSize, pts: pts.map(([x, y]) => P(x, y)) });
+    }
+    // 長い線から描く（人が描く順番に近づける）
+    lines.sort((a, b) => b.pts.length - a.pts.length);
+    return { fills, lines, erases };
+  }
+
+  // 一筆ずつ描いていく様子を見せる（輪郭線→色塗り。色は線の下に入る）
+  function animateDrawing(fills, lines, erases = []) {
+    return new Promise(resolve => {
+      const before = state.strokes.concat(erases);
+      const lineFrames = 80, fillFrames = 70;
+      let f = 0;
+      // 途中の線は、点を途中まで伸ばして描く
+      const partial = (list, t) => {
+        const total = list.reduce((a, s) => a + s.pts.length, 0);
+        let left = Math.ceil(total * t);
+        const out = [];
+        for (const s of list) {
+          if (left <= 0) break;
+          out.push(left >= s.pts.length ? s : { ...s, pts: s.pts.slice(0, Math.max(1, left)) });
+          left -= s.pts.length;
+        }
+        return out;
+      };
+      const step = () => {
+        f++;
+        if (f <= lineFrames) state.strokes = before.concat(partial(lines, f / lineFrames));
+        else state.strokes = before.concat(partial(fills, (f - lineFrames) / fillFrames), lines);
+        cacheValid = false;
+        renderInk();
+        if (f < lineFrames + fillFrames) requestAnimationFrame(step);
+        else {
+          state.strokes = before.concat(fills, lines);
+          pushHistory(before.slice(0, before.length - erases.length));
+          resolve();
+        }
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+
+  // いま見えている場所（用紙があれば用紙の中）のまん中に、正方形で描く
+  function aiTargetRect() {
+    let [x0, y0] = toPaper(0, 0), [x1, y1] = toPaper(W, H);
+    const p = paperRect();
+    if (p) { x0 = Math.max(x0, p.x); y0 = Math.max(y0, p.y); x1 = Math.min(x1, p.x + p.w); y1 = Math.min(y1, p.y + p.h); }
+    if (x1 - x0 < 20 || y1 - y0 < 20) { // 用紙が画面の外なら用紙全体を使う
+      if (p) { x0 = p.x; y0 = p.y; x1 = p.x + p.w; y1 = p.y + p.h; }
+    }
+    const w = (x1 - x0) * 0.88, h = (y1 - y0) * 0.88;
+    return { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h };
+  }
+
+  const aiPanel = document.getElementById("aiPanel");
+  const aiBtn = document.getElementById("aiBtn");
+  const aiPrompt = document.getElementById("aiPrompt");
+  const aiStatus = document.getElementById("aiStatus");
+  const aiLog = document.getElementById("aiLog");
+  const aiExamples = document.getElementById("aiExamples");
+  const CHAT_KEY = "rakugaki-ai-chat";
+  let chat = [];
+  try { chat = JSON.parse(localStorage.getItem(CHAT_KEY) || "[]"); if (!Array.isArray(chat)) chat = []; } catch (e) { chat = []; }
+  function saveChat() {
+    chat = chat.slice(-40);
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify(chat)); } catch (e) { /* 入らなければ画面だけ */ }
+  }
+  function setAiStatus(text, error = false) { aiStatus.textContent = text; aiStatus.classList.toggle("error", error); }
+
+  function msgEl(m) {
+    const el = document.createElement("div");
+    el.className = "ai-msg " + m.role + (m.error ? " error" : "") + (m.pending ? " pending" : "");
+    if (m.role === "user") {
+      el.textContent = m.text;
+      el.title = "押すと入力欄に戻せます";
+      el.addEventListener("click", () => { aiPrompt.value = m.text; autoGrow(); aiPrompt.focus(); });
+    } else if (m.kind === "research") {
+      el.classList.add("research");
+      const h = document.createElement("div"); h.className = "research-head"; h.textContent = "ネットで調べたこと";
+      const t = document.createElement("div"); t.className = "research-body"; t.textContent = m.text.replace(/\*\*/g, "").replace(/^\s*[*・-]\s*/gm, "・");
+      el.append(h, t);
+      if (m.sources && m.sources.length) {
+        const src = document.createElement("div"); src.className = "research-src";
+        for (const so of m.sources) {
+          if (!/^https:\/\//.test(so.uri)) continue;
+          const a = document.createElement("a");
+          a.href = so.uri; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = so.title || "参照";
+          src.appendChild(a);
+        }
+        el.appendChild(src);
+      }
+    } else {
+      if (m.thumb) { const im = document.createElement("img"); im.src = m.thumb; im.alt = ""; el.appendChild(im); }
+      const t = document.createElement("span");
+      t.textContent = m.text;
+      el.appendChild(t);
+      if (m.retry) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "ai-retry"; b.textContent = "もう一度描く";
+        b.addEventListener("click", () => sendPrompt(m.retry));
+        t.appendChild(b);
+      }
+    }
+    return el;
+  }
+  function renderChat(extra) {
+    aiLog.replaceChildren(...chat.map(msgEl), ...(extra ? [msgEl(extra)] : []));
+    aiExamples.hidden = chat.length > 0;
+    aiLog.scrollTop = aiLog.scrollHeight;
+  }
+  function autoGrow() { aiPrompt.style.height = "auto"; aiPrompt.style.height = Math.min(120, aiPrompt.scrollHeight + 2) + "px"; }
+  function makeThumb(src) {
+    return new Promise(res => {
+      const im = new Image();
+      im.onload = () => {
+        const k = 104 / Math.max(im.width, im.height);
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k));
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        res(c.toDataURL("image/webp", 0.7));
+      };
+      im.onerror = () => res(null);
+      im.src = src;
+    });
+  }
+
+  function toggleAi(open) {
+    aiPanel.hidden = !open;
+    aiBtn.setAttribute("aria-expanded", String(open));
+    if (open) { renderChat(); aiPrompt.focus(); }
+  }
+  aiBtn.addEventListener("click", () => toggleAi(aiPanel.hidden));
+  document.getElementById("aiClose").addEventListener("click", () => toggleAi(false));
+  document.getElementById("aiClear").addEventListener("click", () => {
+    if (!chat.length || !confirm("AIとのやりとりの履歴を消しますか？（描いた絵は消えません）")) return;
+    chat = []; saveChat(); renderChat();
+  });
+  document.querySelectorAll(".ai-chip").forEach(b => b.addEventListener("click", () => sendPrompt(b.textContent)));
+  aiPrompt.addEventListener("input", autoGrow);
+  aiPrompt.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); aiPanel.requestSubmit(); }
+    if (e.key === "Escape") toggleAi(false);
+  });
+  aiPanel.addEventListener("pointerdown", e => e.stopPropagation());
+  document.querySelectorAll(".ui-float").forEach(el => el.addEventListener("pointerdown", e => e.stopPropagation()));
+  aiPanel.addEventListener("submit", e => { e.preventDefault(); sendPrompt(aiPrompt.value); });
+
+  let aiBusy = false;
+  async function sendPrompt(raw) {
+    const prompt = String(raw || "").trim();
+    if (aiBusy) return;
+    if (!prompt) { setAiStatus("何を描くか入力してください", true); return; }
+    if (location.protocol === "file:") { setAiStatus("AIはサーバーで開いたときだけ使えます", true); return; }
+    // 紙に何か描いてあれば、その紙に合わせて描く（紙の画像をAIに見せる）
+    let target = aiTargetRect(), editOrig = null;
+    const ink = inkBounds();
+    if (ink) {
+      let rect = paperRect();
+      if (!rect) { const [x0, y0] = toPaper(0, 0), [x1, y1] = toPaper(W, H); rect = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; }
+      const inter = !(ink.x > rect.x + rect.w || ink.x + ink.w < rect.x || ink.y > rect.y + rect.h || ink.y + ink.h < rect.y);
+      if (inter) {
+        target = rect;
+        const c = renderToCanvas(rect, 1024 / Math.max(rect.w, rect.h), true);
+        editOrig = c.toDataURL("image/jpeg", 0.9);
+      }
+    }
+    aiBusy = true;
+    aiPanel.classList.add("busy");
+    aiPrompt.value = ""; autoGrow();
+    chat.push({ role: "user", text: prompt });
+    saveChat();
+    renderChat({ role: "ai", text: "ネットで調べています", pending: true });
+    setAiStatus("調べる→下絵→ペンで描く の順に進みます（20秒ほど）");
+    try {
+      let research = { summary: "", sources: [] };
+      try {
+        const rr = await fetch("api/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+        if (rr.ok) research = await rr.json();
+      } catch (e) { /* 調べられなくても描く */ }
+      if (research.summary) chat.push({ role: "ai", kind: "research", text: research.summary, sources: research.sources || [] });
+      saveChat();
+      renderChat({ role: "ai", text: "下絵を作っています", pending: true });
+      const res = await fetch("api/draw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, aspect: target.w / target.h, research: research.summary || "", image: editOrig }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.image) throw new Error(data.error || "AIが描けませんでした");
+      setAiStatus("下絵ができました。ペンで描いています");
+      renderChat({ role: "ai", text: "ペンで描いています", pending: true });
+      const drawing = await imageToDrawing(data.image, target, editOrig ? { orig: editOrig } : null);
+      if (!drawing || !drawing.lines.length && !drawing.fills.length && !drawing.erases.length) throw new Error(editOrig ? "紙の絵が変わりませんでした。頼み方を変えて試してください" : "AIが描けませんでした。頼み方を変えて試してください");
+      await animateDrawing(drawing.fills, drawing.lines, drawing.erases);
+      chat.push({ role: "ai", text: "描きました。", thumb: await makeThumb(data.image), retry: prompt });
+      setAiStatus("気に入らなければ「一つ戻す」で消せます");
+    } catch (err) {
+      chat.push({ role: "ai", text: (err.message || "AIが描けませんでした") + " ", error: true, retry: prompt });
+      setAiStatus("紙に描いてあるものに合わせて描きます");
+    } finally {
+      saveChat();
+      renderChat();
+      aiBusy = false;
+      aiPanel.classList.remove("busy");
+    }
+  }
+
+  // ── 色えらび（たくさんの色・くわしく選ぶ） ──
+  const colorPop = document.getElementById("colorPop");
+  const moreColorBtn = document.getElementById("moreColorBtn");
+  const svCanvas = document.getElementById("svCanvas");
+  const svCtx = svCanvas.getContext("2d");
+  const hueInput = document.getElementById("hueInput");
+  const hexInput = document.getElementById("hexInput");
+  const pickPreview = document.getElementById("pickPreview");
+  const pick = { h: 200, s: 0.8, v: 0.9 };
+  let recentColors = [];
+  try { recentColors = JSON.parse(localStorage.getItem("rakugaki-recent-colors") || "[]").filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(0, 16); } catch (e) { recentColors = []; }
+
+  const hsvToHex = (h, s, v) => {
+    const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+    return "#" + [f(5), f(3), f(1)].map(c => hex2(c * 255)).join("");
+  };
+  const hexToHsv = hex => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let h = 0;
+    if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { h: (h * 60 + 360) % 360, s: mx ? d / mx : 0, v: mx };
+  };
+  function drawSV() {
+    const w = svCanvas.width, h = svCanvas.height;
+    svCtx.fillStyle = hsvToHex(pick.h, 1, 1); svCtx.fillRect(0, 0, w, h);
+    let g = svCtx.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "#fff"); g.addColorStop(1, "rgba(255,255,255,0)");
+    svCtx.fillStyle = g; svCtx.fillRect(0, 0, w, h);
+    g = svCtx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "#000");
+    svCtx.fillStyle = g; svCtx.fillRect(0, 0, w, h);
+    const x = pick.s * w, y = (1 - pick.v) * h;
+    svCtx.lineWidth = 3; svCtx.strokeStyle = "#fff";
+    svCtx.beginPath(); svCtx.arc(x, y, 10, 0, Math.PI * 2); svCtx.stroke();
+    svCtx.lineWidth = 1; svCtx.strokeStyle = "rgba(0,0,0,.6)";
+    svCtx.beginPath(); svCtx.arc(x, y, 12, 0, Math.PI * 2); svCtx.stroke();
+  }
+  function syncPick(fromHex) {
+    const c = hsvToHex(pick.h, pick.s, pick.v);
+    if (!fromHex) hexInput.value = c.slice(1).toUpperCase();
+    pickPreview.style.setProperty("--pc", c);
+    hueInput.value = Math.round(pick.h);
+    drawSV();
+  }
+  function renderRecent() {
+    const wrap = document.getElementById("recentColors");
+    document.getElementById("recentWrap").hidden = !recentColors.length;
+    wrap.replaceChildren(...recentColors.map(c => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "pop-swatch"; b.dataset.pick = c; b.style.setProperty("--swatch-color", c); b.setAttribute("aria-label", c);
+      b.classList.toggle("active", c === state.color);
+      return b;
+    }));
+  }
+  function useColor(c) {
+    c = c.toLowerCase();
+    setColor(c);
+    setMode("pen");
+    if (!document.querySelector(`.dock-colors [data-color="${c}"]`)) {
+      recentColors = [c, ...recentColors.filter(x => x !== c)].slice(0, 16);
+      try { localStorage.setItem("rakugaki-recent-colors", JSON.stringify(recentColors)); } catch (e) { /* 残らないだけ */ }
+    }
+    Object.assign(pick, hexToHsv(c));
+    syncPick();
+    renderRecent();
+    document.querySelectorAll(".pop-grid .pop-swatch").forEach(b => b.classList.toggle("active", b.dataset.pick === c));
+  }
+  function toggleColorPop(open) {
+    colorPop.hidden = !open;
+    moreColorBtn.setAttribute("aria-expanded", String(open));
+    if (open) {
+      Object.assign(pick, hexToHsv(state.color));
+      syncPick(); renderRecent();
+      document.querySelectorAll(".pop-grid .pop-swatch").forEach(b => b.classList.toggle("active", b.dataset.pick === state.color));
+    }
+  }
+  moreColorBtn.addEventListener("click", () => toggleColorPop(colorPop.hidden));
+  document.getElementById("colorPopClose").addEventListener("click", () => toggleColorPop(false));
+  colorPop.addEventListener("click", e => {
+    const b = e.target.closest("[data-pick]");
+    if (b) useColor(b.dataset.pick);
+  });
+  hueInput.addEventListener("input", () => { pick.h = Number(hueInput.value); syncPick(); });
+  const svPick = e => {
+    const r = svCanvas.getBoundingClientRect();
+    pick.s = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    pick.v = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
+    syncPick();
+  };
+  svCanvas.addEventListener("pointerdown", e => { svCanvas.setPointerCapture(e.pointerId); svPick(e); });
+  svCanvas.addEventListener("pointermove", e => { if (e.buttons) svPick(e); });
+  hexInput.addEventListener("input", () => {
+    const v = hexInput.value.replace(/[^0-9a-f]/gi, "");
+    if (v.length === 6) { Object.assign(pick, hexToHsv("#" + v)); syncPick(true); }
+  });
+  hexInput.addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("pickApply").click(); });
+  document.getElementById("pickApply").addEventListener("click", () => useColor(hsvToHex(pick.h, pick.s, pick.v)));
+
+  // ── 起動 ──
+  setMode("pen");
+  resize();
+  fitView();
+  initBoards().catch(() => showSaveState("保存先を開けませんでした", "error"));
+  new ResizeObserver(() => { resize(); if (viewLocked()) fitView(); else renderAll(); }).observe(board);
+})();
+</script>
+</body>
+</html>
