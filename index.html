@@ -374,6 +374,56 @@ button { cursor: pointer; }
 .save-state.ok::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); margin-right: 8px; }
 .save-state.error { color: var(--danger); border-color: var(--danger); }
 
+/* ── 動かせる・たためる道具 ── */
+.ui-float.moved { transform: none !important; right: auto !important; bottom: auto !important; }
+.grip, .fold {
+  width: 32px; height: 24px; border: 0; padding: 0; background: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--muted); border-radius: 999px; flex: none;
+}
+.grip { cursor: grab; touch-action: none; }
+.grip:active { cursor: grabbing; }
+.grip .ico circle { fill: currentColor; stroke: none; }
+.grip:hover, .fold:hover { color: var(--cyan); }
+.float-body { display: contents; }
+.rail .float-body > * { flex: none; }
+.dock .grip, .dock .fold { width: 24px; height: 32px; }
+.dock .fold .ico { transform: rotate(90deg); }
+.rail .fold .ico { transform: rotate(180deg); }
+.ui-float.is-folded .float-body { display: none; }
+.ui-float.is-folded.rail .fold .ico { transform: none; }
+.ui-float.is-folded.dock .fold .ico { transform: rotate(-90deg); }
+.ui-float.is-folded.rail { padding: 8px 4px; gap: 4px; }
+.ui-float.is-folded.dock { padding: 8px; gap: 8px; }
+.fold-peek { display: none; width: 24px; height: 24px; border-radius: 999px; background: var(--peek, #111827); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35), 0 0 8px var(--peek, transparent); }
+.ui-float.is-folded .fold-peek { display: block; }
+.ui-float.dragging { opacity: 0.85; box-shadow: var(--float-shadow), var(--glow-cyan); }
+
+/* ── 使い方 ── */
+.help-panel {
+  position: absolute; top: 16px; right: 16px;
+  width: min(400px, calc(100% - 32px));
+  max-height: calc(100% - 32px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 24px;
+  background: rgba(12, 13, 24, 0.96);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 40px rgba(139, 92, 255, 0.15);
+  backdrop-filter: blur(16px);
+  z-index: 6;
+}
+.help-list { margin: 0; display: grid; gap: 8px; }
+.help-list dt { font-size: 12px; font-weight: 800; color: var(--cyan); letter-spacing: 0.04em; margin-top: 8px; }
+.help-list dd { margin: 0; font-size: 13px; line-height: 1.7; color: #d5d8f5; }
+.help-list kbd {
+  display: inline-block; min-width: 24px; padding: 0 4px; line-height: 20px; text-align: center;
+  border: 1px solid var(--line); border-radius: 4px; background: rgba(255,255,255,.06);
+  font: 700 11px/20px -apple-system, sans-serif; color: var(--text);
+}
+.save-state { transition: opacity .4s; }
+.save-state.quiet { opacity: 0; }
+
 /* ── 色えらび ── */
 .swatch.more {
   background: conic-gradient(#ff2bd6, #ef4444, #facc15, #22c55e, #22e4ff, #2563eb, #8b5cff, #ff2bd6);
@@ -627,6 +677,7 @@ button { cursor: pointer; }
     </label>
   </div>
   <div class="topbar-end">
+    <button id="helpBtn" class="orb orb-sm" type="button" title="使い方" aria-label="使い方" aria-expanded="false" aria-controls="helpPanel" data-tip="使い方"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4"/><circle cx="12" cy="17" r="0.6"/></svg></button>
     <button id="saveBtn" class="orb orb-sm" type="button" title="画像（PNG）で保存" aria-label="画像で保存" data-tip="画像で保存"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>
     <button id="clearBtn" class="orb orb-sm danger" type="button" title="全部消す" aria-label="全部消す" data-tip="全部消す"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
     <button id="aiBtn" class="ai-trigger" type="button" title="AIに絵を描いてもらう" aria-expanded="false" aria-controls="aiPanel">
@@ -639,15 +690,22 @@ button { cursor: pointer; }
   <canvas id="bgCanvas"></canvas>
   <canvas id="inkCanvas"></canvas>
   <canvas id="uiCanvas"></canvas>
-  <nav class="rail ui-float" aria-label="描く道具">
+  <nav class="rail ui-float" id="railFloat" data-float="rail" aria-label="描く道具">
+    <button class="grip" type="button" data-drag aria-label="道具の列を動かす" title="ドラッグで動かす"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="1.4"/><circle cx="12" cy="9" r="1.4"/><circle cx="16" cy="9" r="1.4"/><circle cx="8" cy="15" r="1.4"/><circle cx="12" cy="15" r="1.4"/><circle cx="16" cy="15" r="1.4"/></svg></button>
+    <div class="float-body">
     <button class="orb" type="button" data-mode="pen" title="ペン (P)" aria-label="ペン" data-tip="ペン  P"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/></svg></button>
     <button class="orb" type="button" data-mode="eraser" title="消しゴム (E)" aria-label="消しゴム" data-tip="消しゴム  E"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l5 5-9 9H7l-3-3z"/><path d="M10 9l5 5M11 20h9"/></svg></button>
     <button class="orb" type="button" data-mode="hand" title="移動 (H)" aria-label="移動" data-tip="移動  H"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg></button>
     <span class="rail-sep" aria-hidden="true"></span>
     <button id="undoBtn" class="orb" type="button" title="一つ戻す (⌘Z)" aria-label="一つ戻す" data-tip="一つ戻す  ⌘Z" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg></button>
     <button id="redoBtn" class="orb" type="button" title="やり直す (⇧⌘Z)" aria-label="やり直す" data-tip="やり直す  ⇧⌘Z" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 000 12h3"/></svg></button>
+      </div>
+    <button class="fold" type="button" data-fold aria-expanded="true" aria-label="道具の列をたたむ" title="たたむ／ひらく"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10l4 4 4-4"/></svg></button>
   </nav>
-  <div class="dock ui-float" role="group" aria-label="ペンの設定">
+  <div class="dock ui-float" id="dockFloat" data-float="dock" role="group" aria-label="ペンの設定">
+    <button class="grip" type="button" data-drag aria-label="色の帯を動かす" title="ドラッグで動かす"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="9" cy="16" r="1.4"/><circle cx="15" cy="8" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="16" r="1.4"/></svg></button>
+    <span class="fold-peek" aria-hidden="true"></span>
+    <div class="float-body">
     <div id="colorWrap" class="dock-colors" role="group" aria-label="ペンの色">
       <button class="swatch" type="button" data-color="#111827" style="--swatch-color:#111827" aria-label="黒"></button>
       <button class="swatch" type="button" data-color="#ef4444" style="--swatch-color:#ef4444" aria-label="赤"></button>
@@ -668,6 +726,8 @@ button { cursor: pointer; }
       <span class="size-preview" aria-hidden="true"><i id="sizeDot"></i></span>
       <input id="sizeInput" type="range" min="2" max="40" value="6" aria-label="太さ">
     </label>
+    </div>
+    <button class="fold" type="button" data-fold aria-expanded="true" aria-label="色の帯をたたむ" title="たたむ／ひらく"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10l4 4 4-4"/></svg></button>
   </div>
   <form id="aiPanel" class="ai-panel" hidden>
     <div class="ai-head">
@@ -690,7 +750,21 @@ button { cursor: pointer; }
     </div>
     <span id="aiStatus" class="ai-status">紙に描いてあるものに合わせて描きます</span>
   </form>
-  <div class="hint"><b>D</b>を押しながらなぞると描けます<span class="hint-move">／2本指・スペース＋ドラッグで移動／ピンチ・⌘＋ホイールで拡大</span></div>
+  <div id="helpPanel" class="help-panel ui-float" hidden>
+    <div class="ai-head">
+      <strong>使い方</strong>
+      <button id="helpClose" class="ai-close" type="button" aria-label="閉じる"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <dl class="help-list">
+      <dt>トラックパッドで描く</dt><dd><kbd>D</kbd>を押しているあいだ、押し込まずになぞるだけで描けます。離すと線が止まります。</dd>
+      <dt>道具を切り替える</dt><dd><kbd>P</kbd>ペン　<kbd>E</kbd>消しゴム　<kbd>H</kbd>移動（ホワイトボードのとき）</dd>
+      <dt>戻す・やり直す</dt><dd><kbd>⌘</kbd>＋<kbd>Z</kbd>で一つ戻す、<kbd>⇧</kbd>＋<kbd>⌘</kbd>＋<kbd>Z</kbd>でやり直す</dd>
+      <dt>道具の列・色の帯</dt><dd>点々のつまみをドラッグすると好きな場所へ動かせます。矢印のボタンでたためます。</dd>
+      <dt>ホワイトボード（無限）</dt><dd>2本指・スペース＋ドラッグで動かし、ピンチ・<kbd>⌘</kbd>＋ホイールで拡大できます。用紙を選んでいるときは紙が固定されます。</dd>
+      <dt>AIに頼む</dt><dd>描いてほしいものを送ると、ネットで調べてからペンで描きます。紙に絵があるときは「このネコに帽子をかぶせて」のように頼めます。</dd>
+      <dt>保存</dt><dd>描くたびにこのブラウザへ自動で保存されます。紙の一覧から何枚でも増やせます。</dd>
+    </dl>
+  </div>
   <div class="hover-badge" aria-hidden="true">なぞり書き中</div>
   <div id="saveState" class="save-state" aria-live="polite"></div>
   <div id="colorPop" class="color-pop ui-float" hidden>
@@ -851,6 +925,8 @@ button { cursor: pointer; }
     if (!el) return;
     el.textContent = text;
     el.className = "save-state " + (cls || "");
+    clearTimeout(showSaveState.t);
+    if (cls === "ok") showSaveState.t = setTimeout(() => el.classList.add("quiet"), 1600);
   }
   let saveTimer = 0, saving = null, dirty = false;
   function boardRecord(withThumb) {
@@ -1301,6 +1377,8 @@ button { cursor: pointer; }
   function setColor(color) {
     state.color = color;
     document.querySelectorAll("[data-color]").forEach(b => b.classList.toggle("active", b.dataset.color === color));
+    const dockEl = document.getElementById("dockFloat");
+    if (dockEl) dockEl.style.setProperty("--peek", color);
     const more = document.getElementById("moreColorBtn");
     if (more) {
       const custom = !document.querySelector(`.dock-colors [data-color="${color}"]`);
@@ -2262,6 +2340,64 @@ button { cursor: pointer; }
   });
   hexInput.addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("pickApply").click(); });
   document.getElementById("pickApply").addEventListener("click", () => useColor(hsvToHex(pick.h, pick.s, pick.v)));
+
+  // ── 道具の列・色の帯：ドラッグで動かす／たたむ（位置と状態は覚えておく） ──
+  function setupFloat(el) {
+    const key = "rakugaki-float-" + el.dataset.float;
+    let st = {};
+    try { st = JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) { st = {}; }
+    const persist = () => { try { localStorage.setItem(key, JSON.stringify(st)); } catch (e) { /* 覚えられないだけ */ } };
+    const fold = el.querySelector("[data-fold]");
+    const applyFold = () => {
+      el.classList.toggle("is-folded", !!st.folded);
+      fold.setAttribute("aria-expanded", String(!st.folded));
+    };
+    const clamp = () => {
+      if (st.x == null) return;
+      const bw = board.clientWidth, bh = board.clientHeight, w = el.offsetWidth, h = el.offsetHeight;
+      const x = Math.max(8, Math.min(bw - w - 8, st.x * bw)), y = Math.max(8, Math.min(bh - h - 8, st.y * bh));
+      el.classList.add("moved");
+      el.style.left = x + "px"; el.style.top = y + "px";
+    };
+    fold.addEventListener("click", () => { st.folded = !st.folded; applyFold(); clamp(); persist(); });
+    const grip = el.querySelector("[data-drag]");
+    grip.addEventListener("pointerdown", e => {
+      e.preventDefault(); e.stopPropagation();
+      grip.setPointerCapture(e.pointerId);
+      const r = el.getBoundingClientRect(), br = board.getBoundingClientRect();
+      const dx = e.clientX - r.left, dy = e.clientY - r.top;
+      el.classList.add("moved", "dragging");
+      el.style.left = (r.left - br.left) + "px"; el.style.top = (r.top - br.top) + "px";
+      const move = ev => {
+        const x = Math.max(8, Math.min(br.width - el.offsetWidth - 8, ev.clientX - br.left - dx));
+        const y = Math.max(8, Math.min(br.height - el.offsetHeight - 8, ev.clientY - br.top - dy));
+        el.style.left = x + "px"; el.style.top = y + "px";
+        st.x = x / br.width; st.y = y / br.height;
+      };
+      const up = () => {
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+        grip.removeEventListener("pointercancel", up);
+        el.classList.remove("dragging");
+        persist();
+      };
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+      grip.addEventListener("pointercancel", up);
+    });
+    // ダブルクリックで元の場所へ
+    grip.addEventListener("dblclick", () => { delete st.x; delete st.y; el.classList.remove("moved"); el.style.left = el.style.top = ""; persist(); });
+    applyFold();
+    clamp();
+    new ResizeObserver(clamp).observe(board);
+  }
+  document.querySelectorAll("[data-float]").forEach(setupFloat);
+
+  const helpPanel = document.getElementById("helpPanel");
+  const helpBtn = document.getElementById("helpBtn");
+  const toggleHelp = open => { helpPanel.hidden = !open; helpBtn.setAttribute("aria-expanded", String(open)); };
+  helpBtn.addEventListener("click", () => toggleHelp(helpPanel.hidden));
+  document.getElementById("helpClose").addEventListener("click", () => toggleHelp(false));
 
   // ── 起動 ──
   setMode("pen");
