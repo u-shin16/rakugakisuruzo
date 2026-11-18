@@ -128,6 +128,11 @@ def index():
     return send_from_directory(BASE_DIR, "index.html")
 
 
+@app.get("/favicon.ico")
+def favicon():
+    return send_from_directory(BASE_DIR / "static" / "icons", "favicon-48.png", mimetype="image/png")
+
+
 @app.post("/api/research")
 def api_research():
     data = request.get_json(silent=True) or {}
