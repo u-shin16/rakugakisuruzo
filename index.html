@@ -2052,7 +2052,8 @@ button { cursor: pointer; }
     return el;
   }
   function renderChat(extra) {
-    aiLog.replaceChildren(...chat.map(msgEl), ...(extra ? [msgEl(extra)] : []));
+    // 調べた内容はAIが描くためだけに使い、チャットには出さない（前に残った分も出さない）
+    aiLog.replaceChildren(...chat.filter(m => m.kind !== "research").map(msgEl), ...(extra ? [msgEl(extra)] : []));
     aiExamples.hidden = chat.length > 0;
     aiLog.scrollTop = aiLog.scrollHeight;
   }
@@ -2129,7 +2130,6 @@ button { cursor: pointer; }
         });
         if (rr.ok) research = await rr.json();
       } catch (e) { /* 調べられなくても描く */ }
-      if (research.summary) chat.push({ role: "ai", kind: "research", text: research.summary, sources: research.sources || [] });
       saveChat();
       renderChat({ role: "ai", text: "下絵を作っています", pending: true });
       const res = await fetch("api/draw", {
